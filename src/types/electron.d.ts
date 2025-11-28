@@ -10,6 +10,7 @@ type WorktreeState = import('../../electron/ipc/types.js').WorktreeState
 type DevServerState = import('../../electron/ipc/types.js').DevServerState
 type TerminalSpawnOptions = import('../../electron/ipc/types.js').TerminalSpawnOptions
 type CopyTreeOptions = import('../../electron/ipc/types.js').CopyTreeOptions
+type CopyTreeResult = import('../../electron/ipc/types.js').CopyTreeResult
 type CanopyConfig = import('../../electron/ipc/types.js').CanopyConfig
 
 export interface ElectronAPI {
@@ -34,8 +35,9 @@ export interface ElectronAPI {
     onData(id: string, callback: (data: string) => void): () => void
   }
   copyTree: {
-    generate(worktreeId: string, options?: CopyTreeOptions): Promise<string>
+    generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>
     injectToTerminal(terminalId: string, worktreeId: string): Promise<void>
+    isAvailable(): Promise<boolean>
   }
   system: {
     openExternal(url: string): Promise<void>
