@@ -1,10 +1,9 @@
 import { useCallback, useEffect } from 'react'
 import '@xterm/xterm/css/xterm.css'
-import { isElectronAvailable } from './hooks/useElectron'
+import { isElectronAvailable, useAgentLauncher } from './hooks'
 import { AppLayout } from './components/Layout'
 import { TerminalGrid } from './components/Terminal'
 import { useTerminalStore } from './store'
-import type { TerminalType } from './components/Terminal/TerminalPane'
 
 function SidebarContent() {
   return (
@@ -18,25 +17,13 @@ function SidebarContent() {
 }
 
 function App() {
-  const { addTerminal, focusNext, focusPrevious, toggleMaximize, focusedId } = useTerminalStore()
-
-  // Map agent type to terminal type
-  const agentTypeToTerminalType = (type: 'claude' | 'gemini' | 'shell'): TerminalType => {
-    return type
-  }
+  const { focusNext, focusPrevious, toggleMaximize, focusedId } = useTerminalStore()
+  const { launchAgent } = useAgentLauncher()
 
   // Handle agent launcher from toolbar
   const handleLaunchAgent = useCallback(async (type: 'claude' | 'gemini' | 'shell') => {
-    if (!isElectronAvailable()) {
-      console.warn('Electron API not available')
-      return
-    }
-    const cwd = process.env.HOME || '/'
-    await addTerminal({
-      type: agentTypeToTerminalType(type),
-      cwd,
-    })
-  }, [addTerminal])
+    await launchAgent(type)
+  }, [launchAgent])
 
   const handleRefresh = useCallback(() => {
     // TODO: Implement worktree refresh via IPC
@@ -53,7 +40,7 @@ function App() {
     if (!isElectronAvailable()) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept shortcuts if user is typing in an input/textarea
+      // Don't intercept shortcuts if user is typing in an input/textarea or terminal
       const target = e.target as HTMLElement
       const isInput = target.tagName === 'INPUT' ||
                      target.tagName === 'TEXTAREA' ||
@@ -61,6 +48,11 @@ function App() {
 
       // Skip if typing in input field
       if (isInput) return
+
+      // Skip if focus is inside a terminal (xterm renders as a div with class 'xterm')
+      // This allows terminal shortcuts and shell hotkeys to work normally
+      const isInTerminal = target.closest('.xterm') !== null
+      if (isInTerminal) return
 
       // Ctrl+Tab: Focus next terminal
       if (e.ctrlKey && e.key === 'Tab' && !e.shiftKey) {
@@ -83,6 +75,16 @@ function App() {
       else if (e.ctrlKey && e.key === 't' && !e.shiftKey) {
         e.preventDefault()
         handleLaunchAgent('shell')
+      }
+      // Ctrl+Shift+C: Launch Claude (use 'C' not 'c' to detect shift properly)
+      else if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+        e.preventDefault()
+        handleLaunchAgent('claude')
+      }
+      // Ctrl+Shift+G: Launch Gemini
+      else if (e.ctrlKey && e.shiftKey && (e.key === 'G' || e.key === 'g')) {
+        e.preventDefault()
+        handleLaunchAgent('gemini')
       }
     }
 

@@ -208,6 +208,23 @@ export function registerIpcHandlers(
         rows,
       })
 
+      // If a command is specified (e.g., 'claude' or 'gemini'), execute it after shell initializes
+      if (options.command) {
+        // Whitelist allowed commands to prevent command injection
+        const ALLOWED_COMMANDS = ['claude', 'gemini']
+        if (!ALLOWED_COMMANDS.includes(options.command)) {
+          console.warn(`Command "${options.command}" is not in the allowed list, ignoring`)
+        } else {
+          // Small delay to allow shell to initialize before sending command
+          setTimeout(() => {
+            // Double-check terminal still exists before writing
+            if (ptyManager.hasTerminal(id)) {
+              ptyManager.write(id, `${options.command}\r`)
+            }
+          }, 100)
+        }
+      }
+
       return id
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -348,6 +365,32 @@ export function registerIpcHandlers(
   }
   ipcMain.handle(CHANNELS.SYSTEM_GET_CONFIG, handleSystemGetConfig)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.SYSTEM_GET_CONFIG))
+
+  const handleSystemCheckCommand = async (_event: Electron.IpcMainInvokeEvent, command: string): Promise<boolean> => {
+    if (typeof command !== 'string' || !command.trim()) {
+      return false
+    }
+
+    // Validate command contains only safe characters to prevent shell injection
+    // Allow alphanumeric, dash, underscore, and dot (for extensions)
+    if (!/^[a-zA-Z0-9._-]+$/.test(command)) {
+      console.warn(`Command "${command}" contains invalid characters, rejecting`)
+      return false
+    }
+
+    try {
+      const { execFileSync } = await import('child_process')
+      // Use 'which' on Unix-like systems, 'where' on Windows
+      const checkCmd = process.platform === 'win32' ? 'where' : 'which'
+      // Use execFileSync instead of execSync to avoid shell interpretation
+      execFileSync(checkCmd, [command], { stdio: 'ignore' })
+      return true
+    } catch {
+      return false
+    }
+  }
+  ipcMain.handle(CHANNELS.SYSTEM_CHECK_COMMAND, handleSystemCheckCommand)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.SYSTEM_CHECK_COMMAND))
 
   // Return cleanup function
   return () => {

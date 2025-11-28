@@ -12,6 +12,8 @@ export interface TerminalSpawnOptions {
   shell?: string
   cols: number
   rows: number
+  /** Command to execute after shell starts (e.g., 'claude' for AI agents) */
+  command?: string
 }
 
 export interface TerminalDataPayload {

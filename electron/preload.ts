@@ -56,6 +56,7 @@ export interface ElectronAPI {
     openExternal(url: string): Promise<void>
     openPath(path: string): Promise<void>
     getConfig(): Promise<CanopyConfig>
+    checkCommand(command: string): Promise<boolean>
   }
 }
 
@@ -182,6 +183,9 @@ const api: ElectronAPI = {
 
     getConfig: () =>
       ipcRenderer.invoke(CHANNELS.SYSTEM_GET_CONFIG),
+
+    checkCommand: (command: string) =>
+      ipcRenderer.invoke(CHANNELS.SYSTEM_CHECK_COMMAND, command),
   },
 }
 
