@@ -4,6 +4,7 @@ import { isElectronAvailable, useAgentLauncher, useWorktrees, useContextInjectio
 import { AppLayout } from './components/Layout'
 import { TerminalGrid } from './components/Terminal'
 import { WorktreeCard } from './components/Worktree'
+import { ProblemsPanel } from './components/Errors'
 import { useTerminalStore, useWorktreeSelectionStore, useLogsStore } from './store'
 import type { WorktreeState } from './types'
 
@@ -260,6 +261,7 @@ function App() {
       onSettings={handleSettings}
     >
       <TerminalGrid className="h-full w-full bg-canopy-bg" />
+      <ProblemsPanel />
     </AppLayout>
   )
 }

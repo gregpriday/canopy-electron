@@ -63,6 +63,11 @@ export const CHANNELS = {
   LOGS_CLEAR: 'logs:clear',
   LOGS_ENTRY: 'logs:entry',
   LOGS_OPEN_FILE: 'logs:open-file',
+
+  // Error channels
+  ERROR_NOTIFY: 'error:notify',
+  ERROR_RETRY: 'error:retry',
+  ERROR_OPEN_LOGS: 'error:open-logs',
 } as const
 
 export type ChannelName = typeof CHANNELS[keyof typeof CHANNELS]

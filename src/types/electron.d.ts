@@ -87,6 +87,29 @@ export interface LogFilterOptions {
   endTime?: number
 }
 
+// Error types for IPC
+type ErrorType = 'git' | 'process' | 'filesystem' | 'network' | 'config' | 'unknown'
+type RetryAction = 'copytree' | 'devserver' | 'terminal' | 'git' | 'worktree'
+
+interface AppError {
+  id: string
+  timestamp: number
+  type: ErrorType
+  message: string
+  details?: string
+  source?: string
+  context?: {
+    worktreeId?: string
+    terminalId?: string
+    filePath?: string
+    command?: string
+  }
+  isTransient: boolean
+  dismissed: boolean
+  retryAction?: RetryAction
+  retryArgs?: Record<string, unknown>
+}
+
 export interface ElectronAPI {
   worktree: {
     getAll(): Promise<WorktreeState[]>
@@ -128,6 +151,7 @@ export interface ElectronAPI {
     getState(): Promise<AppState>
     setState(partialState: Partial<AppState>): Promise<void>
   }
+<<<<<<< HEAD
   logs: {
     getAll(filters?: LogFilterOptions): Promise<LogEntry[]>
     getSources(): Promise<string[]>
@@ -140,6 +164,12 @@ export interface ElectronAPI {
     open(path: string): Promise<void>
     openDialog(): Promise<string | null>
     removeRecent(path: string): Promise<void>
+=======
+  errors: {
+    onError(callback: (error: AppError) => void): () => void
+    retry(errorId: string, action: RetryAction, args?: Record<string, unknown>): Promise<void>
+    openLogs(): Promise<void>
+>>>>>>> feature/issue-47-error-ui-recovery
   }
 }
 
