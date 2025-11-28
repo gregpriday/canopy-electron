@@ -16,9 +16,11 @@ import type {
   DevServerTogglePayload,
   CopyTreeGeneratePayload,
   CopyTreeInjectPayload,
+  CopyTreeResult,
   SystemOpenExternalPayload,
   SystemOpenPathPayload,
 } from './types.js'
+import { copyTreeService } from '../services/CopyTreeService.js'
 
 /**
  * Initialize all IPC handlers
@@ -123,20 +125,37 @@ export function registerIpcHandlers(
   // CopyTree Handlers
   // ==========================================
 
-  const handleCopyTreeGenerate = async (_event: Electron.IpcMainInvokeEvent, payload: CopyTreeGeneratePayload): Promise<string> => {
-    // TODO: Implement when CopyTree integration is migrated
-    console.log('CopyTree generate requested:', payload)
-    return ''
+  const handleCopyTreeGenerate = async (_event: Electron.IpcMainInvokeEvent, _payload: CopyTreeGeneratePayload): Promise<CopyTreeResult> => {
+    // TODO: When WorktreeService is implemented, look up rootPath from worktreeId
+    // For now, return an error indicating the service is not yet fully integrated
+    return {
+      content: '',
+      fileCount: 0,
+      error: 'CopyTree generation requires WorktreeService integration (not yet implemented)',
+    }
+
+    // Future implementation will be:
+    // const worktree = await worktreeService.getWorktree(payload.worktreeId)
+    // if (!worktree) {
+    //   return { content: '', fileCount: 0, error: 'Worktree not found' }
+    // }
+    // return copyTreeService.generate(worktree.path, payload.options)
   }
   ipcMain.handle(CHANNELS.COPYTREE_GENERATE, handleCopyTreeGenerate)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.COPYTREE_GENERATE))
 
   const handleCopyTreeInject = async (_event: Electron.IpcMainInvokeEvent, payload: CopyTreeInjectPayload) => {
-    // TODO: Implement when CopyTree integration is migrated
+    // TODO: Implement when terminal multiplexing and CopyTree integration is complete
     console.log('CopyTree inject requested:', payload)
   }
   ipcMain.handle(CHANNELS.COPYTREE_INJECT, handleCopyTreeInject)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.COPYTREE_INJECT))
+
+  const handleCopyTreeAvailable = async (): Promise<boolean> => {
+    return copyTreeService.isAvailable()
+  }
+  ipcMain.handle(CHANNELS.COPYTREE_AVAILABLE, handleCopyTreeAvailable)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.COPYTREE_AVAILABLE))
 
   // ==========================================
   // System Handlers

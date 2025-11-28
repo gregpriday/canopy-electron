@@ -68,9 +68,8 @@ export interface DevServerErrorPayload {
   error: string
 }
 
-// CopyTree types (placeholders - will be fully defined when services are migrated)
+// CopyTree types
 export interface CopyTreeOptions {
-  rootPath?: string
   profile?: string
   extraArgs?: string[]
   files?: string[]
@@ -79,6 +78,12 @@ export interface CopyTreeOptions {
 export interface CopyTreeGeneratePayload {
   worktreeId: string
   options?: CopyTreeOptions
+}
+
+export interface CopyTreeResult {
+  content: string
+  fileCount: number
+  error?: string
 }
 
 export interface CopyTreeInjectPayload {

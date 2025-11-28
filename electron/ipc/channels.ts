@@ -29,6 +29,7 @@ export const CHANNELS = {
   // CopyTree channels
   COPYTREE_GENERATE: 'copytree:generate',
   COPYTREE_INJECT: 'copytree:inject',
+  COPYTREE_AVAILABLE: 'copytree:available',
 
   // System channels
   SYSTEM_OPEN_EXTERNAL: 'system:open-external',

@@ -17,6 +17,7 @@ import type {
   DevServerState,
   TerminalSpawnOptions,
   CopyTreeOptions,
+  CopyTreeResult,
   CanopyConfig,
 } from './ipc/types.js'
 
@@ -42,8 +43,9 @@ export interface ElectronAPI {
     onData(id: string, callback: (data: string) => void): () => void
   }
   copyTree: {
-    generate(worktreeId: string, options?: CopyTreeOptions): Promise<string>
+    generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>
     injectToTerminal(terminalId: string, worktreeId: string): Promise<void>
+    isAvailable(): Promise<boolean>
   }
   system: {
     openExternal(url: string): Promise<void>
@@ -137,6 +139,9 @@ const api: ElectronAPI = {
 
     injectToTerminal: (terminalId: string, worktreeId: string) =>
       ipcRenderer.invoke(CHANNELS.COPYTREE_INJECT, { terminalId, worktreeId }),
+
+    isAvailable: () =>
+      ipcRenderer.invoke(CHANNELS.COPYTREE_AVAILABLE),
   },
 
   // ==========================================
