@@ -52,12 +52,31 @@ interface TerminalState {
 }
 
 interface AppState {
-  rootPath?: string
   terminals: TerminalState[]
   /** Currently active worktree ID */
   activeWorktreeId?: string
   /** Width of the sidebar in pixels */
-  sidebarWidth?: number
+  sidebarWidth: number
+  /** Last opened directory path */
+  lastDirectory?: string
+  /** Recently opened directories */
+  recentDirectories?: RecentDirectory[]
+}
+
+/**
+ * Recent directory entry
+ * NOTE: This type is duplicated from electron/ipc/types.ts for renderer type safety.
+ * Keep in sync manually.
+ */
+interface RecentDirectory {
+  /** Absolute filesystem path (resolved from symlinks) */
+  path: string
+  /** Timestamp (ms since epoch) when this directory was last opened */
+  lastOpened: number
+  /** Display name (typically the folder name) */
+  displayName: string
+  /** Git repository root if this is a git repository */
+  gitRoot?: string
 }
 
 export interface ElectronAPI {
@@ -100,6 +119,16 @@ export interface ElectronAPI {
   app: {
     getState(): Promise<AppState>
     setState(partialState: Partial<AppState>): Promise<void>
+  }
+  directory: {
+    /** Get list of recently opened directories, validated and sorted by last opened time */
+    getRecent(): Promise<RecentDirectory[]>
+    /** Open a directory and add it to recent directories list */
+    open(path: string): Promise<void>
+    /** Show native directory picker dialog and open selected directory */
+    openDialog(): Promise<string | null>
+    /** Remove a directory from the recent directories list */
+    removeRecent(path: string): Promise<void>
   }
 }
 

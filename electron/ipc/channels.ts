@@ -50,6 +50,12 @@ export const CHANNELS = {
   // App state channels
   APP_GET_STATE: 'app:get-state',
   APP_SET_STATE: 'app:set-state',
+
+  // Directory channels
+  DIRECTORY_GET_RECENTS: 'directory:get-recents',
+  DIRECTORY_OPEN: 'directory:open',
+  DIRECTORY_OPEN_DIALOG: 'directory:open-dialog',
+  DIRECTORY_REMOVE_RECENT: 'directory:remove-recent',
 } as const
 
 export type ChannelName = typeof CHANNELS[keyof typeof CHANNELS]

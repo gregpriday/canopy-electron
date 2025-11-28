@@ -1,4 +1,7 @@
 import Store from 'electron-store';
+import type { RecentDirectory } from './ipc/types.js';
+
+export type { RecentDirectory };
 
 export interface StoreSchema {
   windowState: {
@@ -12,6 +15,7 @@ export interface StoreSchema {
     activeWorktreeId?: string;
     sidebarWidth: number;
     lastDirectory?: string;
+    recentDirectories?: RecentDirectory[];
     terminals: Array<{
       id: string;
       type: 'shell' | 'claude' | 'gemini' | 'custom';
@@ -33,6 +37,7 @@ export const store = new Store<StoreSchema>({
     },
     appState: {
       sidebarWidth: 350,
+      recentDirectories: [],
       terminals: [],
     },
   },
