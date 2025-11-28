@@ -5,7 +5,7 @@
  * Handles terminal spawning, focus management, and maximize/restore.
  */
 
-import { create } from 'zustand'
+import { create, type StateCreator } from 'zustand'
 import type { TerminalType } from '@/components/Terminal/TerminalPane'
 
 export interface TerminalInstance {
@@ -44,7 +44,7 @@ const TYPE_TITLES: Record<TerminalType, string> = {
   custom: 'Terminal',
 }
 
-export const useTerminalStore = create<TerminalGridState>((set) => ({
+const createTerminalStore: StateCreator<TerminalGridState> = (set) => ({
   terminals: [],
   focusedId: null,
   maximizedId: null,
@@ -138,4 +138,6 @@ export const useTerminalStore = create<TerminalGridState>((set) => ({
         currentIndex <= 0 ? state.terminals.length - 1 : currentIndex - 1
       return { focusedId: state.terminals[prevIndex].id }
     }),
-}))
+})
+
+export const useTerminalStore = create<TerminalGridState>()(createTerminalStore)

@@ -15,7 +15,7 @@
 
 import { useMemo, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { useTerminalStore } from '@/store'
+import { useTerminalStore, type TerminalInstance } from '@/store'
 import { TerminalPane } from './TerminalPane'
 import { Terminal, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -77,7 +77,7 @@ export function TerminalGrid({ className, defaultCwd }: TerminalGridProps) {
 
   // If maximized, only show that terminal
   if (maximizedId) {
-    const terminal = terminals.find((t) => t.id === maximizedId)
+    const terminal = terminals.find((t: TerminalInstance) => t.id === maximizedId)
     if (terminal) {
       return (
         <div className={cn('h-full p-2', className)}>
@@ -120,7 +120,7 @@ export function TerminalGrid({ className, defaultCwd }: TerminalGridProps) {
         gridAutoRows: '1fr',
       }}
     >
-      {terminals.map((terminal) => (
+      {terminals.map((terminal: TerminalInstance) => (
         <TerminalPane
           key={terminal.id}
           id={terminal.id}
