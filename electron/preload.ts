@@ -80,6 +80,14 @@ const CHANNELS = {
   ERROR_NOTIFY: 'error:notify',
   ERROR_RETRY: 'error:retry',
   ERROR_OPEN_LOGS: 'error:open-logs',
+
+  // Event Inspector channels
+  EVENT_INSPECTOR_GET_EVENTS: 'event-inspector:get-events',
+  EVENT_INSPECTOR_GET_FILTERED: 'event-inspector:get-filtered',
+  EVENT_INSPECTOR_CLEAR: 'event-inspector:clear',
+  EVENT_INSPECTOR_EVENT: 'event-inspector:event',
+  EVENT_INSPECTOR_SUBSCRIBE: 'event-inspector:subscribe',
+  EVENT_INSPECTOR_UNSUBSCRIBE: 'event-inspector:unsubscribe',
 } as const
 
 // Inlined types (must match electron/ipc/types.ts)
@@ -221,6 +229,25 @@ interface LogFilterOptions {
   search?: string
   startTime?: number
   endTime?: number
+}
+
+// Event Inspector types
+interface EventRecord {
+  id: string
+  timestamp: number
+  type: string
+  payload: any
+  source: 'main' | 'renderer'
+}
+
+interface EventFilterOptions {
+  types?: string[]
+  worktreeId?: string
+  agentId?: string
+  taskId?: string
+  search?: string
+  after?: number
+  before?: number
 }
 
 // Error types for IPC
@@ -501,6 +528,32 @@ const api: ElectronAPI = {
 
     openLogs: () =>
       ipcRenderer.invoke(CHANNELS.ERROR_OPEN_LOGS),
+  },
+
+  // ==========================================
+  // Event Inspector API
+  // ==========================================
+  eventInspector: {
+    getEvents: (): Promise<EventRecord[]> =>
+      ipcRenderer.invoke(CHANNELS.EVENT_INSPECTOR_GET_EVENTS),
+
+    getFiltered: (filters: EventFilterOptions): Promise<EventRecord[]> =>
+      ipcRenderer.invoke(CHANNELS.EVENT_INSPECTOR_GET_FILTERED, filters),
+
+    clear: () =>
+      ipcRenderer.invoke(CHANNELS.EVENT_INSPECTOR_CLEAR),
+
+    subscribe: () =>
+      ipcRenderer.send(CHANNELS.EVENT_INSPECTOR_SUBSCRIBE),
+
+    unsubscribe: () =>
+      ipcRenderer.send(CHANNELS.EVENT_INSPECTOR_UNSUBSCRIBE),
+
+    onEvent: (callback: (event: EventRecord) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, eventRecord: EventRecord) => callback(eventRecord)
+      ipcRenderer.on(CHANNELS.EVENT_INSPECTOR_EVENT, handler)
+      return () => ipcRenderer.removeListener(CHANNELS.EVENT_INSPECTOR_EVENT, handler)
+    },
   },
 }
 

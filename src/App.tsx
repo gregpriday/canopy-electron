@@ -5,7 +5,7 @@ import { AppLayout } from './components/Layout'
 import { TerminalGrid } from './components/Terminal'
 import { WorktreeCard } from './components/Worktree'
 import { ProblemsPanel } from './components/Errors'
-import { useTerminalStore, useWorktreeSelectionStore, useLogsStore } from './store'
+import { useTerminalStore, useWorktreeSelectionStore, useLogsStore, useEventStore } from './store'
 import type { WorktreeState } from './types'
 
 function SidebarContent() {
@@ -105,6 +105,7 @@ function App() {
   const { activeWorktreeId, setActiveWorktree } = useWorktreeSelectionStore()
   const { inject, isInjecting } = useContextInjection()
   const toggleLogsPanel = useLogsStore((state) => state.togglePanel)
+  const toggleEventInspector = useEventStore((state) => state.togglePanel)
 
   // Track if state has been restored (prevent StrictMode double-execution)
   const hasRestoredState = useRef(false)
@@ -237,11 +238,16 @@ function App() {
         e.preventDefault()
         toggleLogsPanel()
       }
+      // Ctrl+Shift+E: Toggle event inspector
+      else if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+        e.preventDefault()
+        toggleEventInspector()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [focusNext, focusPrevious, toggleMaximize, focusedId, handleLaunchAgent, handleInjectContextShortcut, toggleLogsPanel])
+  }, [focusNext, focusPrevious, toggleMaximize, focusedId, handleLaunchAgent, handleInjectContextShortcut, toggleLogsPanel, toggleEventInspector])
 
   if (!isElectronAvailable()) {
     return (
