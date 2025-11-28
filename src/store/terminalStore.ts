@@ -22,6 +22,8 @@ export interface AddTerminalOptions {
   worktreeId?: string
   cwd: string
   shell?: string
+  /** Command to execute after shell starts (e.g., 'claude' for AI agents) */
+  command?: string
 }
 
 interface TerminalGridState {
@@ -60,6 +62,7 @@ const createTerminalStore: StateCreator<TerminalGridState> = (set) => ({
         shell: options.shell,
         cols: 80,
         rows: 24,
+        command: options.command,
       })
 
       const terminal: TerminalInstance = {

@@ -1,5 +1,13 @@
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Settings, Terminal, Bot, Sparkles, Plus } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { RefreshCw, Settings, Terminal, Bot, Sparkles, Plus, Command } from 'lucide-react'
 
 interface ToolbarProps {
   onLaunchAgent: (type: 'claude' | 'gemini' | 'shell') => void
@@ -20,6 +28,7 @@ export function Toolbar({ onLaunchAgent, onRefresh, onSettings }: ToolbarProps) 
           size="sm"
           onClick={() => onLaunchAgent('claude')}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
+          title="Launch Claude (Ctrl+Shift+C)"
         >
           <Bot className="h-4 w-4" />
           <span>Claude</span>
@@ -29,6 +38,7 @@ export function Toolbar({ onLaunchAgent, onRefresh, onSettings }: ToolbarProps) 
           size="sm"
           onClick={() => onLaunchAgent('gemini')}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
+          title="Launch Gemini (Ctrl+Shift+G)"
         >
           <Sparkles className="h-4 w-4" />
           <span>Gemini</span>
@@ -38,18 +48,46 @@ export function Toolbar({ onLaunchAgent, onRefresh, onSettings }: ToolbarProps) 
           size="sm"
           onClick={() => onLaunchAgent('shell')}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
+          title="Launch Shell (Ctrl+T)"
         >
           <Terminal className="h-4 w-4" />
           <span>Shell</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent h-8 w-8"
-          aria-label="Add new terminal"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent h-8 w-8"
+              aria-label="Add new terminal"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => onLaunchAgent('claude')}>
+              <Bot className="mr-2 h-4 w-4" />
+              <span>Claude</span>
+              <DropdownMenuShortcut>Ctrl+Shift+C</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onLaunchAgent('gemini')}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              <span>Gemini</span>
+              <DropdownMenuShortcut>Ctrl+Shift+G</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onLaunchAgent('shell')}>
+              <Terminal className="mr-2 h-4 w-4" />
+              <span>Shell</span>
+              <DropdownMenuShortcut>Ctrl+T</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>
+              <Command className="mr-2 h-4 w-4" />
+              <span>Custom Command...</span>
+              <DropdownMenuShortcut>Ctrl+Shift+N</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Title - centered */}

@@ -41,6 +41,7 @@ export const CHANNELS = {
   SYSTEM_OPEN_EXTERNAL: 'system:open-external',
   SYSTEM_OPEN_PATH: 'system:open-path',
   SYSTEM_GET_CONFIG: 'system:get-config',
+  SYSTEM_CHECK_COMMAND: 'system:check-command',
 
   // PR detection channels
   PR_DETECTED: 'pr:detected',

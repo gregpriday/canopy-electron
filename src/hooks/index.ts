@@ -10,3 +10,6 @@ export type { UseWorktreesReturn } from './useWorktrees'
 export { useDevServer, useDevServerStates } from './useDevServer'
 
 export { useElectron, isElectronAvailable } from './useElectron'
+
+export { useAgentLauncher } from './useAgentLauncher'
+export type { AgentType, AgentAvailability, UseAgentLauncherReturn } from './useAgentLauncher'

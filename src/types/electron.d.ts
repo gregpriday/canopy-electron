@@ -48,6 +48,7 @@ export interface ElectronAPI {
     openExternal(url: string): Promise<void>
     openPath(path: string): Promise<void>
     getConfig(): Promise<CanopyConfig>
+    checkCommand(command: string): Promise<boolean>
   }
 }
 
