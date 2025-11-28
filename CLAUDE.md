@@ -83,6 +83,13 @@ src/
 └── types/electron.d.ts  # TypeScript declarations for window.electron
 ```
 
+## Installing Dependencies
+
+**IMPORTANT:** Always use `npm install`, never `npm ci`. The `package-lock.json` is gitignored in this project, so `npm ci` will fail. The `npm install` command will:
+1. Install all dependencies from `package.json`
+2. Automatically run `npm run rebuild` via the postinstall hook
+3. Rebuild node-pty for Electron's Node version
+
 ## Native Module Handling
 
 node-pty is a native module that must be rebuilt for Electron's Node version:
