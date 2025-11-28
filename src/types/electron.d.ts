@@ -36,6 +36,7 @@ export interface ElectronAPI {
     resize(id: string, cols: number, rows: number): void
     kill(id: string): Promise<void>
     onData(id: string, callback: (data: string) => void): () => void
+    onExit(callback: (id: string, exitCode: number) => void): () => void
   }
   copyTree: {
     generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>
