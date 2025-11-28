@@ -63,11 +63,12 @@ const CHANNELS = {
   APP_GET_STATE: 'app:get-state',
   APP_SET_STATE: 'app:set-state',
 
-  // Directory channels
-  DIRECTORY_GET_RECENTS: 'directory:get-recents',
-  DIRECTORY_OPEN: 'directory:open',
-  DIRECTORY_OPEN_DIALOG: 'directory:open-dialog',
-  DIRECTORY_REMOVE_RECENT: 'directory:remove-recent',
+  // Logs channels
+  LOGS_GET_ALL: 'logs:get-all',
+  LOGS_GET_SOURCES: 'logs:get-sources',
+  LOGS_CLEAR: 'logs:clear',
+  LOGS_ENTRY: 'logs:entry',
+  LOGS_OPEN_FILE: 'logs:open-file',
 } as const
 
 // Inlined types (must match electron/ipc/types.ts)
@@ -188,23 +189,27 @@ interface TerminalState {
 }
 
 interface AppState {
+  rootPath?: string
   terminals: TerminalState[]
-  activeWorktreeId?: string
-  sidebarWidth: number
-  lastDirectory?: string
-  recentDirectories?: RecentDirectory[]
 }
 
-/**
- * Recent directory entry
- * NOTE: This type is duplicated from electron/ipc/types.ts to avoid module format conflicts
- * in the sandboxed preload script. Keep in sync manually.
- */
-interface RecentDirectory {
-  path: string
-  lastOpened: number
-  displayName: string
-  gitRoot?: string
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+
+interface LogEntry {
+  id: string
+  timestamp: number
+  level: LogLevel
+  message: string
+  context?: Record<string, unknown>
+  source?: string
+}
+
+interface LogFilterOptions {
+  levels?: LogLevel[]
+  sources?: string[]
+  search?: string
+  startTime?: number
+  endTime?: number
 }
 
 export interface ElectronAPI {
@@ -248,8 +253,15 @@ export interface ElectronAPI {
     getState(): Promise<AppState>
     setState(partialState: Partial<AppState>): Promise<void>
   }
+  logs: {
+    getAll(filters?: LogFilterOptions): Promise<LogEntry[]>
+    getSources(): Promise<string[]>
+    clear(): Promise<void>
+    openFile(): Promise<void>
+    onEntry(callback: (entry: LogEntry) => void): () => void
+  }
   directory: {
-    getRecent(): Promise<RecentDirectory[]>
+    getRecent(): Promise<Array<{ path: string; lastOpened: number; name: string }>>
     open(path: string): Promise<void>
     openDialog(): Promise<string | null>
     removeRecent(path: string): Promise<void>
@@ -396,22 +408,41 @@ const api: ElectronAPI = {
   },
 
   // ==========================================
+  // Logs API
+  // ==========================================
+  logs: {
+    getAll: (filters?: LogFilterOptions) =>
+      ipcRenderer.invoke(CHANNELS.LOGS_GET_ALL, filters),
+
+    getSources: () =>
+      ipcRenderer.invoke(CHANNELS.LOGS_GET_SOURCES),
+
+    clear: () =>
+      ipcRenderer.invoke(CHANNELS.LOGS_CLEAR),
+
+    openFile: () =>
+      ipcRenderer.invoke(CHANNELS.LOGS_OPEN_FILE),
+
+    onEntry: (callback: (entry: LogEntry) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, entry: LogEntry) => callback(entry)
+      ipcRenderer.on(CHANNELS.LOGS_ENTRY, handler)
+      return () => ipcRenderer.removeListener(CHANNELS.LOGS_ENTRY, handler)
+    },
+  },
+
+  // ==========================================
   // Directory API
   // ==========================================
   directory: {
-    /** Get list of recently opened directories, validated and sorted by last opened time */
     getRecent: () =>
       ipcRenderer.invoke(CHANNELS.DIRECTORY_GET_RECENTS),
 
-    /** Open a directory and add it to recent directories list */
     open: (path: string) =>
       ipcRenderer.invoke(CHANNELS.DIRECTORY_OPEN, { path }),
 
-    /** Show native directory picker dialog and open selected directory */
     openDialog: () =>
       ipcRenderer.invoke(CHANNELS.DIRECTORY_OPEN_DIALOG),
 
-    /** Remove a directory from the recent directories list */
     removeRecent: (path: string) =>
       ipcRenderer.invoke(CHANNELS.DIRECTORY_REMOVE_RECENT, { path }),
   },
