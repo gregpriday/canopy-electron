@@ -1,30 +1,72 @@
 # Dependencies
 node_modules/
+package-lock.json
 
 # Build outputs
 dist/
 dist-electron/
+out/
+build/
 release/
+*.asar
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# OS - macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# OS - Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# OS - Linux
+*~
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
 # Environment
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # Cache
 .cache/
 *.tsbuildinfo
+.eslintcache
+.prettiercache
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Electron specific
+*.dmg
+*.snap
+*.AppImage
+*.deb
+*.rpm
