@@ -68,6 +68,17 @@ export const CHANNELS = {
   ERROR_NOTIFY: 'error:notify',
   ERROR_RETRY: 'error:retry',
   ERROR_OPEN_LOGS: 'error:open-logs',
+
+  // Recipe channels
+  RECIPE_GET_ALL: 'recipe:get-all',
+  RECIPE_GET: 'recipe:get',
+  RECIPE_GET_FOR_WORKTREE: 'recipe:get-for-worktree',
+  RECIPE_CREATE: 'recipe:create',
+  RECIPE_UPDATE: 'recipe:update',
+  RECIPE_DELETE: 'recipe:delete',
+  RECIPE_RUN: 'recipe:run',
+  RECIPE_EXPORT: 'recipe:export',
+  RECIPE_IMPORT: 'recipe:import',
 } as const
 
 export type ChannelName = typeof CHANNELS[keyof typeof CHANNELS]

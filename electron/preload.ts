@@ -80,6 +80,17 @@ const CHANNELS = {
   ERROR_NOTIFY: 'error:notify',
   ERROR_RETRY: 'error:retry',
   ERROR_OPEN_LOGS: 'error:open-logs',
+
+  // Recipe channels
+  RECIPE_GET_ALL: 'recipe:get-all',
+  RECIPE_GET: 'recipe:get',
+  RECIPE_GET_FOR_WORKTREE: 'recipe:get-for-worktree',
+  RECIPE_CREATE: 'recipe:create',
+  RECIPE_UPDATE: 'recipe:update',
+  RECIPE_DELETE: 'recipe:delete',
+  RECIPE_RUN: 'recipe:run',
+  RECIPE_EXPORT: 'recipe:export',
+  RECIPE_IMPORT: 'recipe:import',
 } as const
 
 // Inlined types (must match electron/ipc/types.ts)
@@ -246,6 +257,31 @@ interface AppError {
   retryArgs?: Record<string, unknown>
 }
 
+// Recipe types
+type TerminalType = 'shell' | 'claude' | 'gemini' | 'custom'
+
+interface RecipeTerminal {
+  type: TerminalType
+  title?: string
+  command?: string
+  env?: Record<string, string>
+}
+
+interface TerminalRecipe {
+  id: string
+  name: string
+  worktreeId: string | null
+  terminals: RecipeTerminal[]
+  createdAt: number
+  updatedAt: number
+}
+
+interface RecipeRunResult {
+  success: boolean
+  terminalIds: string[]
+  error?: string
+}
+
 export interface ElectronAPI {
   worktree: {
     getAll(): Promise<WorktreeState[]>
@@ -304,6 +340,17 @@ export interface ElectronAPI {
     onError(callback: (error: AppError) => void): () => void
     retry(errorId: string, action: RetryAction, args?: Record<string, unknown>): Promise<void>
     openLogs(): Promise<void>
+  }
+  recipe: {
+    getAll(): Promise<TerminalRecipe[]>
+    get(id: string): Promise<TerminalRecipe | null>
+    getForWorktree(worktreeId: string | null): Promise<TerminalRecipe[]>
+    create(name: string, worktreeId: string | null, terminals: RecipeTerminal[]): Promise<TerminalRecipe>
+    update(id: string, updates: { name?: string; worktreeId?: string | null; terminals?: RecipeTerminal[] }): Promise<TerminalRecipe>
+    delete(id: string): Promise<void>
+    run(id: string, worktreeId: string, worktreePath: string): Promise<RecipeRunResult>
+    export(id: string): Promise<string>
+    import(json: string, worktreeId: string | null): Promise<TerminalRecipe>
   }
 }
 
@@ -501,6 +548,38 @@ const api: ElectronAPI = {
 
     openLogs: () =>
       ipcRenderer.invoke(CHANNELS.ERROR_OPEN_LOGS),
+  },
+
+  // ==========================================
+  // Recipe API
+  // ==========================================
+  recipe: {
+    getAll: () =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_GET_ALL),
+
+    get: (id: string) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_GET, { id }),
+
+    getForWorktree: (worktreeId: string | null) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_GET_FOR_WORKTREE, { worktreeId }),
+
+    create: (name: string, worktreeId: string | null, terminals: RecipeTerminal[]) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_CREATE, { name, worktreeId, terminals }),
+
+    update: (id: string, updates: { name?: string; worktreeId?: string | null; terminals?: RecipeTerminal[] }) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_UPDATE, { id, updates }),
+
+    delete: (id: string) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_DELETE, { id }),
+
+    run: (id: string, worktreeId: string, worktreePath: string) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_RUN, { id, worktreeId, worktreePath }),
+
+    export: (id: string) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_EXPORT, { id }),
+
+    import: (json: string, worktreeId: string | null) =>
+      ipcRenderer.invoke(CHANNELS.RECIPE_IMPORT, { json, worktreeId }),
   },
 }
 

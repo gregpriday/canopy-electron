@@ -4,8 +4,16 @@ import { ActivityLight } from './ActivityLight';
 import { FileChangeList } from './FileChangeList';
 import { ErrorBanner } from '../Errors/ErrorBanner';
 import { useDevServer } from '../../hooks/useDevServer';
-import { useErrorStore, type RetryAction } from '../../store';
+import { useErrorStore, useRecipeStore, type RetryAction, type TerminalRecipe, type RecipeTerminal } from '../../store';
 import { cn } from '../../lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import { RecipeEditor } from '../TerminalRecipe';
 
 export interface WorktreeCardProps {
   worktree: WorktreeState;
@@ -109,6 +117,70 @@ export function WorktreeCard({
     },
     [removeError]
   );
+
+  // Recipe state
+  const { fetchRecipesForWorktree, createRecipe, updateRecipe, runRecipe, runningRecipeId } = useRecipeStore();
+  const [recipes, setRecipes] = useState<TerminalRecipe[]>([]);
+  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<TerminalRecipe | null>(null);
+  const [recipeError, setRecipeError] = useState<string | null>(null);
+
+  // Fetch recipes when worktree changes (with race condition protection)
+  useEffect(() => {
+    let isCurrent = true;
+    setRecipeError(null);
+
+    fetchRecipesForWorktree(worktree.id)
+      .then(fetchedRecipes => {
+        if (isCurrent) {
+          setRecipes(fetchedRecipes);
+        }
+      })
+      .catch(err => {
+        if (isCurrent) {
+          const message = err instanceof Error ? err.message : 'Failed to fetch recipes';
+          setRecipeError(message);
+          setRecipes([]);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [worktree.id, fetchRecipesForWorktree]);
+
+  // Handle creating a new recipe
+  const handleCreateRecipe = useCallback(() => {
+    setEditingRecipe(null);
+    setRecipeEditorOpen(true);
+  }, []);
+
+  // Handle editing an existing recipe
+  const handleEditRecipe = useCallback((recipe: TerminalRecipe) => {
+    setEditingRecipe(recipe);
+    setRecipeEditorOpen(true);
+  }, []);
+
+  // Handle running a recipe
+  const handleRunRecipe = useCallback(async (recipe: TerminalRecipe) => {
+    setRecipeError(null);
+    const result = await runRecipe(recipe.id, worktree.id, worktree.path);
+    if (!result.success && result.error) {
+      setRecipeError(result.error);
+    }
+  }, [runRecipe, worktree.id, worktree.path]);
+
+  // Handle saving a recipe (create or update)
+  const handleSaveRecipe = useCallback(async (name: string, terminals: RecipeTerminal[]) => {
+    if (editingRecipe) {
+      await updateRecipe(editingRecipe.id, { name, terminals });
+    } else {
+      await createRecipe(name, worktree.id, terminals);
+    }
+    // Refresh recipes list
+    const updated = await fetchRecipesForWorktree(worktree.id);
+    setRecipes(updated);
+  }, [editingRecipe, updateRecipe, createRecipe, worktree.id, fetchRecipesForWorktree]);
 
   // For main worktree, notes expire after 10 minutes (real-time)
   const [now, setNow] = useState(() => Date.now());
@@ -347,6 +419,56 @@ export function WorktreeCard({
             PR
           </button>
         )}
+        {/* Recipe Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'text-xs px-2 py-1 border rounded',
+                recipes.length > 0
+                  ? 'border-orange-600 text-orange-400 hover:bg-orange-900 hover:border-orange-500'
+                  : 'border-gray-600 text-gray-400 hover:bg-gray-800 hover:border-gray-500'
+              )}
+            >
+              Recipe {recipes.length > 0 && `(${recipes.length})`}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+            {recipes.length > 0 && (
+              <>
+                {recipes.map((recipe) => (
+                  <DropdownMenuItem
+                    key={recipe.id}
+                    onClick={() => handleRunRecipe(recipe)}
+                    disabled={runningRecipeId === recipe.id}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-green-400">▶</span>
+                      {recipe.name}
+                      <span className="text-xs text-canopy-text/50">
+                        ({recipe.terminals.length} terminals)
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {recipes.map((recipe) => (
+                  <DropdownMenuItem
+                    key={`edit-${recipe.id}`}
+                    onClick={() => handleEditRecipe(recipe)}
+                  >
+                    <span className="text-canopy-text/70">Edit "{recipe.name}"</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem onClick={handleCreateRecipe}>
+              <span className="text-canopy-accent">+ Create New Recipe</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Header: Activity light + Branch */}
@@ -462,6 +584,22 @@ export function WorktreeCard({
           )}
         </div>
       )}
+
+      {/* Recipe errors */}
+      {recipeError && (
+        <div className="mt-3 text-sm text-red-400 bg-red-400/10 px-3 py-2 rounded">
+          {recipeError}
+        </div>
+      )}
+
+      {/* Recipe Editor Dialog */}
+      <RecipeEditor
+        open={recipeEditorOpen}
+        onOpenChange={setRecipeEditorOpen}
+        recipe={editingRecipe}
+        worktreeId={worktree.id}
+        onSave={handleSaveRecipe}
+      />
     </div>
   );
 }

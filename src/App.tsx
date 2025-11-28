@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import '@xterm/xterm/css/xterm.css'
 import { isElectronAvailable, useAgentLauncher, useWorktrees, useContextInjection } from './hooks'
 import { AppLayout } from './components/Layout'
@@ -105,6 +105,7 @@ function App() {
   const { activeWorktreeId, setActiveWorktree } = useWorktreeSelectionStore()
   const { inject, isInjecting } = useContextInjection()
   const toggleLogsPanel = useLogsStore((state) => state.togglePanel)
+  const [problemsPanelOpen, setProblemsPanelOpen] = useState(false)
 
   // Track if state has been restored (prevent StrictMode double-execution)
   const hasRestoredState = useRef(false)
@@ -261,7 +262,10 @@ function App() {
       onSettings={handleSettings}
     >
       <TerminalGrid className="h-full w-full bg-canopy-bg" />
-      <ProblemsPanel />
+      <ProblemsPanel
+        isOpen={problemsPanelOpen}
+        onClose={() => setProblemsPanelOpen(false)}
+      />
     </AppLayout>
   )
 }

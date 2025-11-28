@@ -1,5 +1,6 @@
 import Store from 'electron-store';
 import type { RecentDirectory } from './ipc/types.js';
+import type { TerminalRecipe } from './types/recipe.js';
 
 export type { RecentDirectory };
 
@@ -24,6 +25,7 @@ export interface StoreSchema {
       worktreeId?: string;
     }>;
   };
+  recipes: TerminalRecipe[];
 }
 
 export const store = new Store<StoreSchema>({
@@ -40,5 +42,6 @@ export const store = new Store<StoreSchema>({
       recentDirectories: [],
       terminals: [],
     },
+    recipes: [],
   },
 });

@@ -165,3 +165,60 @@ export interface DirectoryOpenPayload {
 export interface DirectoryRemoveRecentPayload {
   path: string
 }
+
+// Recipe types
+export type { TerminalRecipe, RecipeTerminal, CreateRecipeInput, UpdateRecipeInput, RecipeExport } from '../types/recipe.js'
+
+export interface RecipeGetPayload {
+  id: string
+}
+
+export interface RecipeGetForWorktreePayload {
+  worktreeId: string | null
+}
+
+export interface RecipeCreatePayload {
+  name: string
+  worktreeId: string | null
+  terminals: Array<{
+    type: 'shell' | 'claude' | 'gemini' | 'custom'
+    title?: string
+    command?: string
+    env?: Record<string, string>
+  }>
+}
+
+export interface RecipeUpdatePayload {
+  id: string
+  updates: {
+    name?: string
+    worktreeId?: string | null
+    terminals?: Array<{
+      type: 'shell' | 'claude' | 'gemini' | 'custom'
+      title?: string
+      command?: string
+      env?: Record<string, string>
+    }>
+  }
+}
+
+export interface RecipeDeletePayload {
+  id: string
+}
+
+export interface RecipeRunPayload {
+  id: string
+  worktreeId: string
+  worktreePath: string
+}
+
+export interface RecipeRunResult {
+  success: boolean
+  terminalIds: string[]
+  error?: string
+}
+
+export interface RecipeImportPayload {
+  json: string
+  worktreeId: string | null
+}

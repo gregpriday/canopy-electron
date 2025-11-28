@@ -27,6 +27,16 @@ import type {
   RecentDirectory,
   DirectoryOpenPayload,
   DirectoryRemoveRecentPayload,
+  RecipeGetPayload,
+  RecipeGetForWorktreePayload,
+  RecipeCreatePayload,
+  RecipeUpdatePayload,
+  RecipeDeletePayload,
+  RecipeRunPayload,
+  RecipeRunResult,
+  RecipeImportPayload,
+  TerminalRecipe,
+  RecipeExport,
 } from './types.js'
 import { copyTreeService } from '../services/CopyTreeService.js'
 import { store } from '../store.js'
@@ -700,6 +710,304 @@ export function registerIpcHandlers(
   }
   ipcMain.handle(CHANNELS.DIRECTORY_REMOVE_RECENT, handleDirectoryRemoveRecent)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.DIRECTORY_REMOVE_RECENT))
+
+  // ==========================================
+  // Recipe Handlers
+  // ==========================================
+
+  const handleRecipeGetAll = async (): Promise<TerminalRecipe[]> => {
+    return store.get('recipes', [])
+  }
+  ipcMain.handle(CHANNELS.RECIPE_GET_ALL, handleRecipeGetAll)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_GET_ALL))
+
+  const handleRecipeGet = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeGetPayload): Promise<TerminalRecipe | null> => {
+    if (!payload?.id) {
+      throw new Error('Recipe ID is required')
+    }
+    const recipes = store.get('recipes', [])
+    return recipes.find(r => r.id === payload.id) || null
+  }
+  ipcMain.handle(CHANNELS.RECIPE_GET, handleRecipeGet)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_GET))
+
+  const handleRecipeGetForWorktree = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeGetForWorktreePayload): Promise<TerminalRecipe[]> => {
+    // Guard against missing payload
+    if (!payload || typeof payload !== 'object') {
+      return []
+    }
+    const recipes = store.get('recipes', [])
+    // Return recipes for specific worktree + global recipes (worktreeId === null)
+    const worktreeId = payload.worktreeId ?? null
+    return recipes.filter(r => r.worktreeId === worktreeId || r.worktreeId === null)
+  }
+  ipcMain.handle(CHANNELS.RECIPE_GET_FOR_WORKTREE, handleRecipeGetForWorktree)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_GET_FOR_WORKTREE))
+
+  const handleRecipeCreate = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeCreatePayload): Promise<TerminalRecipe> => {
+    // Validate payload
+    if (!payload?.name || typeof payload.name !== 'string' || payload.name.trim() === '') {
+      throw new Error('Recipe name is required')
+    }
+    if (!Array.isArray(payload.terminals) || payload.terminals.length === 0) {
+      throw new Error('At least one terminal is required')
+    }
+    if (payload.terminals.length > 10) {
+      throw new Error('Maximum 10 terminals per recipe')
+    }
+
+    // Validate each terminal
+    const validTypes = ['shell', 'claude', 'gemini', 'custom']
+    for (const terminal of payload.terminals) {
+      if (!terminal?.type || !validTypes.includes(terminal.type)) {
+        throw new Error('Invalid terminal type')
+      }
+    }
+
+    const now = Date.now()
+    const recipe: TerminalRecipe = {
+      id: crypto.randomUUID(),
+      name: payload.name.trim(),
+      worktreeId: payload.worktreeId,
+      terminals: payload.terminals,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    const recipes = store.get('recipes', [])
+    recipes.push(recipe)
+    store.set('recipes', recipes)
+
+    return recipe
+  }
+  ipcMain.handle(CHANNELS.RECIPE_CREATE, handleRecipeCreate)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_CREATE))
+
+  const handleRecipeUpdate = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeUpdatePayload): Promise<TerminalRecipe> => {
+    if (!payload?.id) {
+      throw new Error('Recipe ID is required')
+    }
+    if (!payload.updates || typeof payload.updates !== 'object') {
+      throw new Error('Updates object is required')
+    }
+
+    const recipes = store.get('recipes', [])
+    const index = recipes.findIndex(r => r.id === payload.id)
+    if (index === -1) {
+      throw new Error('Recipe not found')
+    }
+
+    // Validate updates
+    if (payload.updates.name !== undefined) {
+      if (typeof payload.updates.name !== 'string' || payload.updates.name.trim() === '') {
+        throw new Error('Recipe name cannot be empty')
+      }
+    }
+    if (payload.updates.terminals !== undefined) {
+      if (!Array.isArray(payload.updates.terminals) || payload.updates.terminals.length === 0) {
+        throw new Error('At least one terminal is required')
+      }
+      if (payload.updates.terminals.length > 10) {
+        throw new Error('Maximum 10 terminals per recipe')
+      }
+      const validTypes = ['shell', 'claude', 'gemini', 'custom']
+      for (const terminal of payload.updates.terminals) {
+        if (!terminal?.type || !validTypes.includes(terminal.type)) {
+          throw new Error('Invalid terminal type')
+        }
+      }
+    }
+
+    const updatedRecipe: TerminalRecipe = {
+      ...recipes[index],
+      ...payload.updates,
+      name: payload.updates.name?.trim() ?? recipes[index].name,
+      updatedAt: Date.now(),
+    }
+
+    recipes[index] = updatedRecipe
+    store.set('recipes', recipes)
+
+    return updatedRecipe
+  }
+  ipcMain.handle(CHANNELS.RECIPE_UPDATE, handleRecipeUpdate)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_UPDATE))
+
+  const handleRecipeDelete = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeDeletePayload): Promise<void> => {
+    if (!payload?.id) {
+      throw new Error('Recipe ID is required')
+    }
+
+    const recipes = store.get('recipes', [])
+    const filtered = recipes.filter(r => r.id !== payload.id)
+    if (filtered.length === recipes.length) {
+      throw new Error('Recipe not found')
+    }
+
+    store.set('recipes', filtered)
+  }
+  ipcMain.handle(CHANNELS.RECIPE_DELETE, handleRecipeDelete)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_DELETE))
+
+  const handleRecipeRun = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeRunPayload): Promise<RecipeRunResult> => {
+    if (!payload?.id) {
+      return { success: false, terminalIds: [], error: 'Recipe ID is required' }
+    }
+    if (!payload?.worktreeId) {
+      return { success: false, terminalIds: [], error: 'Worktree ID is required' }
+    }
+    if (!payload?.worktreePath) {
+      return { success: false, terminalIds: [], error: 'Worktree path is required' }
+    }
+
+    // Validate worktree exists and path matches (security: prevent arbitrary path execution)
+    if (worktreeService) {
+      const statesMap = worktreeService.getAllStates()
+      const worktree = statesMap.get(payload.worktreeId)
+      if (!worktree) {
+        return { success: false, terminalIds: [], error: 'Worktree not found' }
+      }
+      if (worktree.path !== payload.worktreePath) {
+        return { success: false, terminalIds: [], error: 'Worktree path mismatch' }
+      }
+    }
+
+    const recipes = store.get('recipes', [])
+    const recipe = recipes.find(r => r.id === payload.id)
+    if (!recipe) {
+      return { success: false, terminalIds: [], error: 'Recipe not found' }
+    }
+
+    const terminalIds: string[] = []
+
+    try {
+      // Spawn terminals sequentially to avoid overwhelming PTY
+      for (const terminal of recipe.terminals) {
+        const id = crypto.randomUUID()
+
+        // Determine command for AI agent types
+        let command: string | undefined
+        if (terminal.type === 'claude') {
+          command = 'claude'
+        } else if (terminal.type === 'gemini') {
+          command = 'gemini'
+        } else if (terminal.type === 'custom' && terminal.command) {
+          // For custom type, only allow whitelisted commands
+          const ALLOWED_COMMANDS = ['claude', 'gemini']
+          if (ALLOWED_COMMANDS.includes(terminal.command)) {
+            command = terminal.command
+          }
+        }
+
+        ptyManager.spawn(id, {
+          cwd: payload.worktreePath,
+          cols: 80,
+          rows: 24,
+        })
+
+        // If command is specified, execute it after shell initializes
+        if (command) {
+          setTimeout(() => {
+            if (ptyManager.hasTerminal(id)) {
+              ptyManager.write(id, `${command}\r`)
+            }
+          }, 100)
+        }
+
+        terminalIds.push(id)
+
+        // Small delay between spawns to prevent buffer overflow
+        if (recipe.terminals.indexOf(terminal) < recipe.terminals.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50))
+        }
+      }
+
+      return { success: true, terminalIds }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, terminalIds, error: errorMessage }
+    }
+  }
+  ipcMain.handle(CHANNELS.RECIPE_RUN, handleRecipeRun)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_RUN))
+
+  const handleRecipeExport = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeGetPayload): Promise<string> => {
+    if (!payload?.id) {
+      throw new Error('Recipe ID is required')
+    }
+
+    const recipes = store.get('recipes', [])
+    const recipe = recipes.find(r => r.id === payload.id)
+    if (!recipe) {
+      throw new Error('Recipe not found')
+    }
+
+    const exportData: RecipeExport = {
+      version: 1,
+      recipe: {
+        name: recipe.name,
+        terminals: recipe.terminals,
+      },
+      exportedAt: Date.now(),
+    }
+
+    return JSON.stringify(exportData, null, 2)
+  }
+  ipcMain.handle(CHANNELS.RECIPE_EXPORT, handleRecipeExport)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_EXPORT))
+
+  const handleRecipeImport = async (_event: Electron.IpcMainInvokeEvent, payload: RecipeImportPayload): Promise<TerminalRecipe> => {
+    if (!payload?.json || typeof payload.json !== 'string') {
+      throw new Error('JSON string is required')
+    }
+
+    let exportData: RecipeExport
+    try {
+      exportData = JSON.parse(payload.json)
+    } catch {
+      throw new Error('Invalid JSON format')
+    }
+
+    // Validate export format
+    if (exportData.version !== 1) {
+      throw new Error('Unsupported export format version')
+    }
+    if (!exportData.recipe?.name || !Array.isArray(exportData.recipe.terminals)) {
+      throw new Error('Invalid recipe data')
+    }
+    if (exportData.recipe.terminals.length === 0) {
+      throw new Error('At least one terminal is required')
+    }
+    if (exportData.recipe.terminals.length > 10) {
+      throw new Error('Maximum 10 terminals per recipe')
+    }
+
+    // Validate terminal types
+    const validTypes = ['shell', 'claude', 'gemini', 'custom']
+    for (const terminal of exportData.recipe.terminals) {
+      if (!terminal?.type || !validTypes.includes(terminal.type)) {
+        throw new Error('Invalid terminal type in imported recipe')
+      }
+    }
+
+    const now = Date.now()
+    const recipe: TerminalRecipe = {
+      id: crypto.randomUUID(),
+      name: exportData.recipe.name,
+      worktreeId: payload.worktreeId,
+      terminals: exportData.recipe.terminals,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    const recipes = store.get('recipes', [])
+    recipes.push(recipe)
+    store.set('recipes', recipes)
+
+    return recipe
+  }
+  ipcMain.handle(CHANNELS.RECIPE_IMPORT, handleRecipeImport)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.RECIPE_IMPORT))
 
   // Return cleanup function
   return () => {

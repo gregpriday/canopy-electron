@@ -110,6 +110,31 @@ interface AppError {
   retryArgs?: Record<string, unknown>
 }
 
+// Recipe types
+type TerminalType = 'shell' | 'claude' | 'gemini' | 'custom'
+
+interface RecipeTerminal {
+  type: TerminalType
+  title?: string
+  command?: string
+  env?: Record<string, string>
+}
+
+interface TerminalRecipe {
+  id: string
+  name: string
+  worktreeId: string | null
+  terminals: RecipeTerminal[]
+  createdAt: number
+  updatedAt: number
+}
+
+interface RecipeRunResult {
+  success: boolean
+  terminalIds: string[]
+  error?: string
+}
+
 export interface ElectronAPI {
   worktree: {
     getAll(): Promise<WorktreeState[]>
@@ -151,7 +176,6 @@ export interface ElectronAPI {
     getState(): Promise<AppState>
     setState(partialState: Partial<AppState>): Promise<void>
   }
-<<<<<<< HEAD
   logs: {
     getAll(filters?: LogFilterOptions): Promise<LogEntry[]>
     getSources(): Promise<string[]>
@@ -164,12 +188,22 @@ export interface ElectronAPI {
     open(path: string): Promise<void>
     openDialog(): Promise<string | null>
     removeRecent(path: string): Promise<void>
-=======
+  }
   errors: {
     onError(callback: (error: AppError) => void): () => void
     retry(errorId: string, action: RetryAction, args?: Record<string, unknown>): Promise<void>
     openLogs(): Promise<void>
->>>>>>> feature/issue-47-error-ui-recovery
+  }
+  recipe: {
+    getAll(): Promise<TerminalRecipe[]>
+    get(id: string): Promise<TerminalRecipe | null>
+    getForWorktree(worktreeId: string | null): Promise<TerminalRecipe[]>
+    create(name: string, worktreeId: string | null, terminals: RecipeTerminal[]): Promise<TerminalRecipe>
+    update(id: string, updates: { name?: string; worktreeId?: string | null; terminals?: RecipeTerminal[] }): Promise<TerminalRecipe>
+    delete(id: string): Promise<void>
+    run(id: string, worktreeId: string, worktreePath: string): Promise<RecipeRunResult>
+    export(id: string): Promise<string>
+    import(json: string, worktreeId: string | null): Promise<TerminalRecipe>
   }
 }
 

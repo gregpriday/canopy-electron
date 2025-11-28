@@ -7,3 +7,6 @@ export { useLogsStore, filterLogs } from './logsStore'
 
 export { useErrorStore } from './errorStore'
 export type { AppError, ErrorType, RetryAction } from './errorStore'
+
+export { useRecipeStore } from './recipeStore'
+export type { TerminalRecipe, RecipeTerminal, TerminalType } from './recipeStore'
