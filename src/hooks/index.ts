@@ -13,3 +13,6 @@ export { useElectron, isElectronAvailable } from './useElectron'
 
 export { useAgentLauncher } from './useAgentLauncher'
 export type { AgentType, AgentAvailability, UseAgentLauncherReturn } from './useAgentLauncher'
+
+export { useContextInjection } from './useContextInjection'
+export type { UseContextInjectionReturn } from './useContextInjection'
