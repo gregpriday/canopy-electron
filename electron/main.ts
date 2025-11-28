@@ -2,14 +2,17 @@ import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import os from 'os'
-import { registerIpcHandlers } from './ipc/handlers.js'
+import { registerIpcHandlers, sendToRenderer } from './ipc/handlers.js'
+import { CHANNELS } from './ipc/channels.js'
 import { PtyManager } from './services/PtyManager.js'
+import { DevServerManager } from './services/DevServerManager.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 let mainWindow: BrowserWindow | null = null
 let ptyManager: PtyManager | null = null
+let devServerManager: DevServerManager | null = null
 let cleanupIpcHandlers: (() => void) | null = null
 
 // Terminal ID for the default terminal (for backwards compatibility with renderer)
@@ -44,8 +47,17 @@ function createWindow(): void {
   // Create PtyManager instance to manage all terminal processes
   ptyManager = new PtyManager()
 
-  // Register IPC handlers with PtyManager
-  cleanupIpcHandlers = registerIpcHandlers(mainWindow, ptyManager)
+  // --- DEV SERVER MANAGER SETUP ---
+  // Create and initialize DevServerManager
+  devServerManager = new DevServerManager()
+  devServerManager.initialize(mainWindow, (channel: string, ...args: unknown[]) => {
+    if (mainWindow) {
+      sendToRenderer(mainWindow, channel, ...args)
+    }
+  })
+
+  // Register IPC handlers with PtyManager and DevServerManager
+  cleanupIpcHandlers = registerIpcHandlers(mainWindow, ptyManager, devServerManager)
 
   // Spawn the default terminal for backwards compatibility with the renderer
   ptyManager.spawn(DEFAULT_TERMINAL_ID, {
@@ -54,11 +66,16 @@ function createWindow(): void {
     rows: 30,
   })
 
-  mainWindow.on('closed', () => {
+  mainWindow.on('closed', async () => {
     // Cleanup IPC handlers first to prevent any late IPC traffic
     if (cleanupIpcHandlers) {
       cleanupIpcHandlers()
       cleanupIpcHandlers = null
+    }
+    // Stop all dev servers
+    if (devServerManager) {
+      await devServerManager.stopAll()
+      devServerManager = null
     }
     // Then cleanup PTY manager (kills all terminals)
     if (ptyManager) {
@@ -83,16 +100,31 @@ app.on('activate', () => {
   }
 })
 
-// Cleanup on quit
-app.on('before-quit', () => {
-  // Cleanup IPC handlers first to stop incoming requests
-  if (cleanupIpcHandlers) {
-    cleanupIpcHandlers()
-    cleanupIpcHandlers = null
-  }
-  // Then cleanup PTY manager
-  if (ptyManager) {
-    ptyManager.dispose()
-    ptyManager = null
-  }
+// Cleanup on quit - prevent default to ensure graceful shutdown completes
+app.on('before-quit', (event) => {
+  // Prevent quit until cleanup is done
+  event.preventDefault()
+
+  // Perform cleanup
+  Promise.all([
+    devServerManager ? devServerManager.stopAll() : Promise.resolve(),
+    new Promise<void>((resolve) => {
+      if (ptyManager) {
+        ptyManager.dispose()
+        ptyManager = null
+      }
+      resolve()
+    })
+  ]).then(() => {
+    // Cleanup IPC handlers
+    if (cleanupIpcHandlers) {
+      cleanupIpcHandlers()
+      cleanupIpcHandlers = null
+    }
+    // Now actually quit
+    app.exit(0)
+  }).catch((error) => {
+    console.error('Error during cleanup:', error)
+    app.exit(1)
+  })
 })
