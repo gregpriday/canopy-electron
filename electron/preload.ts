@@ -34,6 +34,7 @@ export interface ElectronAPI {
     toggle(worktreeId: string, worktreePath: string, command?: string): Promise<DevServerState>
     getState(worktreeId: string): Promise<DevServerState>
     getLogs(worktreeId: string): Promise<string[]>
+    hasDevScript(worktreePath: string): Promise<boolean>
     onUpdate(callback: (state: DevServerState) => void): () => void
     onError(callback: (data: { worktreeId: string; error: string }) => void): () => void
   }
@@ -96,6 +97,9 @@ const api: ElectronAPI = {
 
     getLogs: (worktreeId: string) =>
       ipcRenderer.invoke(CHANNELS.DEVSERVER_GET_LOGS, worktreeId),
+
+    hasDevScript: (worktreePath: string) =>
+      ipcRenderer.invoke(CHANNELS.DEVSERVER_HAS_DEV_SCRIPT, worktreePath),
 
     onUpdate: (callback: (state: DevServerState) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, state: DevServerState) => callback(state)
