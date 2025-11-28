@@ -5,7 +5,7 @@
  * Provides a single initialization function to wire up all IPC communication.
  */
 
-import { ipcMain, BrowserWindow, shell } from 'electron'
+import { ipcMain, BrowserWindow, shell, dialog } from 'electron'
 import crypto from 'crypto'
 import os from 'os'
 import { CHANNELS } from './channels.js'
@@ -24,9 +24,13 @@ import type {
   SystemOpenExternalPayload,
   SystemOpenPathPayload,
   WorktreeSetActivePayload,
+  RecentDirectory,
+  DirectoryOpenPayload,
+  DirectoryRemoveRecentPayload,
 } from './types.js'
 import { copyTreeService } from '../services/CopyTreeService.js'
 import { store } from '../store.js'
+import { updateRecentDirectories, removeRecentDirectory } from '../utils/recentDirectories.js'
 
 /**
  * Initialize all IPC handlers
@@ -527,6 +531,128 @@ export function registerIpcHandlers(
   }
   ipcMain.handle(CHANNELS.APP_SET_STATE, handleAppSetState)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.APP_SET_STATE))
+
+  // ==========================================
+  // Directory Handlers
+  // ==========================================
+
+  const handleDirectoryGetRecents = async (): Promise<RecentDirectory[]> => {
+    const recents = store.get('appState.recentDirectories', [])
+
+    // Validate and clean up stale entries
+    const { validateRecentDirectories } = await import('../utils/recentDirectories.js')
+    const validRecents = await validateRecentDirectories(recents)
+
+    // Update store if any entries were removed
+    if (validRecents.length !== recents.length) {
+      store.set('appState.recentDirectories', validRecents)
+    }
+
+    return validRecents
+  }
+  ipcMain.handle(CHANNELS.DIRECTORY_GET_RECENTS, handleDirectoryGetRecents)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.DIRECTORY_GET_RECENTS))
+
+  const handleDirectoryOpen = async (_event: Electron.IpcMainInvokeEvent, payload: DirectoryOpenPayload) => {
+    try {
+      // Validate payload structure
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('Invalid payload')
+      }
+
+      const { path } = payload
+
+      // Validate path
+      if (!path || typeof path !== 'string' || path.trim() === '') {
+        throw new Error('Invalid directory path')
+      }
+
+      // Check if directory exists and is accessible
+      const fs = await import('fs')
+      const stats = await fs.promises.stat(path)
+      if (!stats.isDirectory()) {
+        throw new Error('Path is not a directory')
+      }
+
+      // Update recent directories
+      const currentRecents = store.get('appState.recentDirectories', [])
+      const updatedRecents = await updateRecentDirectories(currentRecents, path)
+      store.set('appState.recentDirectories', updatedRecents)
+
+      // Update lastDirectory
+      store.set('appState.lastDirectory', path)
+
+      // Refresh worktree service if available
+      if (worktreeService) {
+        await worktreeService.refresh()
+      }
+    } catch (error) {
+      console.error('Failed to open directory:', error)
+      throw error
+    }
+  }
+  ipcMain.handle(CHANNELS.DIRECTORY_OPEN, handleDirectoryOpen)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.DIRECTORY_OPEN))
+
+  const handleDirectoryOpenDialog = async (): Promise<string | null> => {
+    try {
+      const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Open Directory',
+      })
+
+      if (result.canceled || !result.filePaths[0]) {
+        return null
+      }
+
+      const selectedPath = result.filePaths[0]
+
+      // Update recent directories
+      const currentRecents = store.get('appState.recentDirectories', [])
+      const updatedRecents = await updateRecentDirectories(currentRecents, selectedPath)
+      store.set('appState.recentDirectories', updatedRecents)
+
+      // Update lastDirectory
+      store.set('appState.lastDirectory', selectedPath)
+
+      // Refresh worktree service if available
+      if (worktreeService) {
+        await worktreeService.refresh()
+      }
+
+      return selectedPath
+    } catch (error) {
+      console.error('Failed to open directory dialog:', error)
+      throw error
+    }
+  }
+  ipcMain.handle(CHANNELS.DIRECTORY_OPEN_DIALOG, handleDirectoryOpenDialog)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.DIRECTORY_OPEN_DIALOG))
+
+  const handleDirectoryRemoveRecent = async (_event: Electron.IpcMainInvokeEvent, payload: DirectoryRemoveRecentPayload) => {
+    try {
+      // Validate payload structure
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('Invalid payload')
+      }
+
+      const { path } = payload
+
+      // Validate path
+      if (!path || typeof path !== 'string' || path.trim() === '') {
+        throw new Error('Invalid directory path')
+      }
+
+      const currentRecents = store.get('appState.recentDirectories', [])
+      const updatedRecents = removeRecentDirectory(currentRecents, path)
+      store.set('appState.recentDirectories', updatedRecents)
+    } catch (error) {
+      console.error('Failed to remove recent directory:', error)
+      throw error
+    }
+  }
+  ipcMain.handle(CHANNELS.DIRECTORY_REMOVE_RECENT, handleDirectoryRemoveRecent)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.DIRECTORY_REMOVE_RECENT))
 
   // Return cleanup function
   return () => {

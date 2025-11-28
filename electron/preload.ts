@@ -62,6 +62,12 @@ const CHANNELS = {
   // App state channels
   APP_GET_STATE: 'app:get-state',
   APP_SET_STATE: 'app:set-state',
+
+  // Directory channels
+  DIRECTORY_GET_RECENTS: 'directory:get-recents',
+  DIRECTORY_OPEN: 'directory:open',
+  DIRECTORY_OPEN_DIALOG: 'directory:open-dialog',
+  DIRECTORY_REMOVE_RECENT: 'directory:remove-recent',
 } as const
 
 // Inlined types (must match electron/ipc/types.ts)
@@ -182,8 +188,23 @@ interface TerminalState {
 }
 
 interface AppState {
-  rootPath?: string
   terminals: TerminalState[]
+  activeWorktreeId?: string
+  sidebarWidth: number
+  lastDirectory?: string
+  recentDirectories?: RecentDirectory[]
+}
+
+/**
+ * Recent directory entry
+ * NOTE: This type is duplicated from electron/ipc/types.ts to avoid module format conflicts
+ * in the sandboxed preload script. Keep in sync manually.
+ */
+interface RecentDirectory {
+  path: string
+  lastOpened: number
+  displayName: string
+  gitRoot?: string
 }
 
 export interface ElectronAPI {
@@ -226,6 +247,12 @@ export interface ElectronAPI {
   app: {
     getState(): Promise<AppState>
     setState(partialState: Partial<AppState>): Promise<void>
+  }
+  directory: {
+    getRecent(): Promise<RecentDirectory[]>
+    open(path: string): Promise<void>
+    openDialog(): Promise<string | null>
+    removeRecent(path: string): Promise<void>
   }
 }
 
@@ -366,6 +393,27 @@ const api: ElectronAPI = {
 
     setState: (partialState: Partial<AppState>) =>
       ipcRenderer.invoke(CHANNELS.APP_SET_STATE, partialState),
+  },
+
+  // ==========================================
+  // Directory API
+  // ==========================================
+  directory: {
+    /** Get list of recently opened directories, validated and sorted by last opened time */
+    getRecent: () =>
+      ipcRenderer.invoke(CHANNELS.DIRECTORY_GET_RECENTS),
+
+    /** Open a directory and add it to recent directories list */
+    open: (path: string) =>
+      ipcRenderer.invoke(CHANNELS.DIRECTORY_OPEN, { path }),
+
+    /** Show native directory picker dialog and open selected directory */
+    openDialog: () =>
+      ipcRenderer.invoke(CHANNELS.DIRECTORY_OPEN_DIALOG),
+
+    /** Remove a directory from the recent directories list */
+    removeRecent: (path: string) =>
+      ipcRenderer.invoke(CHANNELS.DIRECTORY_REMOVE_RECENT, { path }),
   },
 }
 

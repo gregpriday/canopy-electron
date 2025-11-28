@@ -136,10 +136,18 @@ export interface CanopyConfig {
 }
 
 // App state types
+export interface RecentDirectory {
+  path: string
+  lastOpened: number
+  displayName: string
+  gitRoot?: string
+}
+
 export interface AppState {
   activeWorktreeId?: string
   sidebarWidth: number
   lastDirectory?: string
+  recentDirectories?: RecentDirectory[]
   terminals: Array<{
     id: string
     type: 'shell' | 'claude' | 'gemini' | 'custom'
@@ -147,4 +155,13 @@ export interface AppState {
     cwd: string
     worktreeId?: string
   }>
+}
+
+// Directory operation payloads
+export interface DirectoryOpenPayload {
+  path: string
+}
+
+export interface DirectoryRemoveRecentPayload {
+  path: string
 }
