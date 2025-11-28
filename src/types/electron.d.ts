@@ -21,9 +21,12 @@ export interface ElectronAPI {
     onRemove(callback: (data: { worktreeId: string }) => void): () => void
   }
   devServer: {
-    start(worktreeId: string, command?: string): Promise<void>
-    stop(worktreeId: string): Promise<void>
-    toggle(worktreeId: string): Promise<void>
+    start(worktreeId: string, worktreePath: string, command?: string): Promise<DevServerState>
+    stop(worktreeId: string): Promise<DevServerState>
+    toggle(worktreeId: string, worktreePath: string, command?: string): Promise<DevServerState>
+    getState(worktreeId: string): Promise<DevServerState>
+    getLogs(worktreeId: string): Promise<string[]>
+    hasDevScript(worktreePath: string): Promise<boolean>
     onUpdate(callback: (state: DevServerState) => void): () => void
     onError(callback: (data: { worktreeId: string; error: string }) => void): () => void
   }

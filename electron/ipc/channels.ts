@@ -18,6 +18,7 @@ export const CHANNELS = {
   DEVSERVER_TOGGLE: 'devserver:toggle',
   DEVSERVER_GET_STATE: 'devserver:get-state',
   DEVSERVER_GET_LOGS: 'devserver:get-logs',
+  DEVSERVER_HAS_DEV_SCRIPT: 'devserver:has-dev-script',
   DEVSERVER_UPDATE: 'devserver:update',
   DEVSERVER_ERROR: 'devserver:error',
 

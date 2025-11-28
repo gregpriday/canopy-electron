@@ -135,6 +135,15 @@ export function registerIpcHandlers(
   ipcMain.handle(CHANNELS.DEVSERVER_GET_LOGS, handleDevServerGetLogs)
   handlers.push(() => ipcMain.removeHandler(CHANNELS.DEVSERVER_GET_LOGS))
 
+  const handleDevServerHasDevScript = async (_event: Electron.IpcMainInvokeEvent, worktreePath: string) => {
+    if (!devServerManager) {
+      throw new Error('DevServerManager not initialized')
+    }
+    return devServerManager.hasDevScriptAsync(worktreePath)
+  }
+  ipcMain.handle(CHANNELS.DEVSERVER_HAS_DEV_SCRIPT, handleDevServerHasDevScript)
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.DEVSERVER_HAS_DEV_SCRIPT))
+
   // ==========================================
   // Terminal Handlers
   // ==========================================
