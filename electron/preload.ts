@@ -43,6 +43,7 @@ export interface ElectronAPI {
     resize(id: string, cols: number, rows: number): void
     kill(id: string): Promise<void>
     onData(id: string, callback: (data: string) => void): () => void
+    onExit(callback: (id: string, exitCode: number) => void): () => void
   }
   copyTree: {
     generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>
@@ -135,6 +136,16 @@ const api: ElectronAPI = {
       }
       ipcRenderer.on(CHANNELS.TERMINAL_DATA, handler)
       return () => ipcRenderer.removeListener(CHANNELS.TERMINAL_DATA, handler)
+    },
+
+    onExit: (callback: (id: string, exitCode: number) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, id: unknown, exitCode: unknown) => {
+        if (typeof id === 'string' && typeof exitCode === 'number') {
+          callback(id, exitCode)
+        }
+      }
+      ipcRenderer.on(CHANNELS.TERMINAL_EXIT, handler)
+      return () => ipcRenderer.removeListener(CHANNELS.TERMINAL_EXIT, handler)
     },
   },
 

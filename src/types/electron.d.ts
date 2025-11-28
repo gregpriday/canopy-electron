@@ -21,9 +21,11 @@ export interface ElectronAPI {
     onRemove(callback: (data: { worktreeId: string }) => void): () => void
   }
   devServer: {
-    start(worktreeId: string, command?: string): Promise<void>
-    stop(worktreeId: string): Promise<void>
-    toggle(worktreeId: string): Promise<void>
+    start(worktreeId: string, worktreePath: string, command?: string): Promise<DevServerState>
+    stop(worktreeId: string): Promise<DevServerState>
+    toggle(worktreeId: string, worktreePath: string, command?: string): Promise<DevServerState>
+    getState(worktreeId: string): Promise<DevServerState>
+    getLogs(worktreeId: string): Promise<string[]>
     onUpdate(callback: (state: DevServerState) => void): () => void
     onError(callback: (data: { worktreeId: string; error: string }) => void): () => void
   }
@@ -33,6 +35,7 @@ export interface ElectronAPI {
     resize(id: string, cols: number, rows: number): void
     kill(id: string): Promise<void>
     onData(id: string, callback: (data: string) => void): () => void
+    onExit(callback: (id: string, exitCode: number) => void): () => void
   }
   copyTree: {
     generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>
