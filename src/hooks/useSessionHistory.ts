@@ -163,7 +163,7 @@ export function useSessionHistory(): UseSessionHistoryReturn {
   // Initial load and refetch only when server-side filters change
   useEffect(() => {
     fetchSessions();
-  }, [filters.agentType, filters.worktreeId, filters.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters.agentType, filters.worktreeId, filters.status]);
 
   // Apply client-side filters without refetching
   useEffect(() => {
