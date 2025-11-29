@@ -3,7 +3,9 @@
  * Enforces valid state transitions and provides heuristics for state detection.
  */
 
+import stripAnsi from "strip-ansi";
 import type { AgentState } from "../types/index.js";
+import { getAgentProfile } from "./ai/agentProfiles.js";
 
 /**
  * Events that can trigger agent state transitions.
@@ -11,6 +13,7 @@ import type { AgentState } from "../types/index.js";
 export type AgentEvent =
   | { type: "start" }
   | { type: "output"; data: string }
+  | { type: "busy" } // Detected busy/working indicator (e.g., "esc to interrupt")
   | { type: "prompt" } // Detected prompt/waiting for user input
   | { type: "input" } // User input received
   | { type: "exit"; code: number }
@@ -58,6 +61,15 @@ export function nextAgentState(current: AgentState, event: AgentEvent): AgentSta
       if (current === "idle") {
         return "working";
       }
+      break;
+
+    case "busy":
+      // Busy indicator detected - ensure we stay/transition to working
+      // This handles the case where we might be in 'waiting' and agent starts processing again
+      if (current === "waiting" || current === "idle") {
+        return "working";
+      }
+      // Already working - stay working
       break;
 
     case "output":
@@ -184,19 +196,34 @@ export interface PromptDetectionOptions {
  * 3. Buffer-based heuristics (short, no trailing newline)
  * 4. Timing-based heuristics (silence after incomplete output)
  *
+<<<<<<< HEAD
  * @param data - String data to analyze
- * @param options - Optional timing and process state information
+ * @param options - Optional timing, process state, and terminal type
  * @returns true if data appears to be a prompt, false otherwise
  */
-export function detectPrompt(data: string, options?: PromptDetectionOptions): boolean {
+export function detectPrompt(
+  data: string,
+  options?: PromptDetectionOptions & { type?: string }
+): boolean {
+  // Strip ANSI codes to handle colored prompts
+  const cleanData = stripAnsi(data);
+
+  // Check agent-specific patterns first
+  if (options?.type) {
+    const profile = getAgentProfile(options.type);
+    if (profile?.promptPatterns?.some((p) => p.test(cleanData))) {
+      return true;
+    }
+  }
+
   // Ignore very short strings to reduce false positives
-  if (data.length < MIN_PROMPT_LENGTH) {
+  if (cleanData.length < MIN_PROMPT_LENGTH) {
     return false;
   }
 
   // Cap buffer length to avoid excessive regex work on chatty output
   // Prompts appear at the tail, so take the last MAX_BUFFER_LENGTH bytes
-  const buffer = data.length > MAX_BUFFER_LENGTH ? data.slice(-MAX_BUFFER_LENGTH) : data;
+  const buffer = cleanData.length > MAX_BUFFER_LENGTH ? cleanData.slice(-MAX_BUFFER_LENGTH) : cleanData;
 
   // Get the last meaningful chunk (prompts usually appear at the end)
   const trimmed = buffer.trim();
@@ -222,7 +249,7 @@ export function detectPrompt(data: string, options?: PromptDetectionOptions): bo
 
   // === Phase 3: Buffer-based heuristics for low-confidence patterns ===
   // Only apply low-confidence patterns if the buffer looks like a prompt
-  const endsWithNewline = data.endsWith("\n") || data.endsWith("\r");
+  const endsWithNewline = cleanData.endsWith("\n") || cleanData.endsWith("\r");
   const isShortBuffer = lastLine.length < MAX_LOW_CONFIDENCE_LENGTH;
 
   // Low-confidence patterns + short buffer without trailing newline = likely prompt
@@ -255,4 +282,24 @@ export function detectPrompt(data: string, options?: PromptDetectionOptions): bo
  */
 export function getStateChangeTimestamp(): number {
   return Date.now();
+}
+
+/**
+ * Detect if terminal output contains busy state indicators.
+ * Uses agent-specific patterns to detect when the agent is actively processing.
+ *
+ * IMPORTANT: Uses strip-ansi to remove ANSI color codes that often wrap
+ * status strings like "(esc to interrupt)".
+ *
+ * @param data - Terminal output data (may contain ANSI codes)
+ * @param type - Terminal type (claude, gemini, custom)
+ * @returns true if busy patterns are detected, false otherwise
+ */
+export function detectBusyState(data: string, type: string): boolean {
+  const profile = getAgentProfile(type);
+  if (!profile) return false;
+
+  // Strip ANSI color codes before pattern matching
+  const cleanData = stripAnsi(data);
+  return profile.busyPatterns.some((pattern) => pattern.test(cleanData));
 }

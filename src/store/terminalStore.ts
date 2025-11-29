@@ -21,10 +21,28 @@ export interface AddTerminalOptions {
   command?: string;
 }
 
+/**
+ * Represents a command queued for execution when the agent becomes idle.
+ */
+export interface QueuedCommand {
+  /** Unique identifier for this queued command */
+  id: string;
+  /** Terminal to send the command to */
+  terminalId: string;
+  /** The payload to write to the terminal */
+  payload: string;
+  /** Human-readable description (e.g., "Inject Context") */
+  description: string;
+  /** Timestamp when the command was queued */
+  queuedAt: number;
+}
+
 interface TerminalGridState {
   terminals: TerminalInstance[];
   focusedId: string | null;
   maximizedId: string | null;
+  /** Queue of commands waiting to be sent when agents become idle */
+  commandQueue: QueuedCommand[];
 
   addTerminal: (options: AddTerminalOptions) => Promise<string>;
   removeTerminal: (id: string) => void;
@@ -39,6 +57,26 @@ interface TerminalGridState {
   toggleMaximize: (id: string) => void;
   focusNext: () => void;
   focusPrevious: () => void;
+
+  // Command queue operations
+  /**
+   * Queue a command for a terminal. If the terminal is idle/waiting, sends immediately.
+   * If the terminal is busy (working), queues for later execution.
+   */
+  queueCommand: (terminalId: string, payload: string, description: string) => void;
+  /**
+   * Process the command queue for a terminal. Called when agent transitions to 'waiting'.
+   * Sends the first queued command (FIFO) and removes it from the queue.
+   */
+  processQueue: (terminalId: string) => void;
+  /**
+   * Clear all queued commands for a terminal (e.g., when terminal is closed).
+   */
+  clearQueue: (terminalId: string) => void;
+  /**
+   * Get the number of queued commands for a terminal.
+   */
+  getQueueCount: (terminalId: string) => number;
 
   // Bulk actions
   bulkCloseByState: (states: AgentState | AgentState[]) => void;
@@ -60,6 +98,7 @@ const createTerminalStore: StateCreator<TerminalGridState> = (set, get) => ({
   terminals: [],
   focusedId: null,
   maximizedId: null,
+  commandQueue: [],
 
   addTerminal: async (options) => {
     const type = options.type || "shell";
@@ -163,6 +202,8 @@ const createTerminalStore: StateCreator<TerminalGridState> = (set, get) => ({
         terminals: newTerminals,
         focusedId: newFocusedId,
         maximizedId: state.maximizedId === id ? null : state.maximizedId,
+        // Clear any queued commands for this terminal
+        commandQueue: state.commandQueue.filter((c) => c.terminalId !== id),
       };
     });
   },
@@ -246,6 +287,56 @@ const createTerminalStore: StateCreator<TerminalGridState> = (set, get) => ({
       const prevIndex = currentIndex <= 0 ? state.terminals.length - 1 : currentIndex - 1;
       return { focusedId: state.terminals[prevIndex].id };
     }),
+
+  // Command queue operations
+  queueCommand: (terminalId, payload, description) => {
+    const terminal = get().terminals.find((t) => t.id === terminalId);
+
+    // If agent is idle/waiting, send immediately (no need to queue)
+    if (terminal?.agentState === "waiting" || terminal?.agentState === "idle") {
+      window.electron.terminal.write(terminalId, payload);
+      return;
+    }
+
+    // Otherwise, queue the command for later execution
+    const id = crypto.randomUUID();
+    set((state) => ({
+      commandQueue: [
+        ...state.commandQueue,
+        { id, terminalId, payload, description, queuedAt: Date.now() },
+      ],
+    }));
+  },
+
+  processQueue: (terminalId) => {
+    // Use functional set to avoid race conditions with concurrent queueCommand calls
+    set((state) => {
+      const forTerminal = state.commandQueue.filter((c) => c.terminalId === terminalId);
+      const remaining = state.commandQueue.filter((c) => c.terminalId !== terminalId);
+
+      // Process FIFO - send first queued command
+      if (forTerminal.length > 0) {
+        const cmd = forTerminal[0];
+        window.electron.terminal.write(cmd.terminalId, cmd.payload);
+
+        // Remove processed command, keep rest in queue
+        return { commandQueue: [...remaining, ...forTerminal.slice(1)] };
+      }
+
+      return state; // No changes if queue is empty
+    });
+  },
+
+  clearQueue: (terminalId) => {
+    set((state) => ({
+      commandQueue: state.commandQueue.filter((c) => c.terminalId !== terminalId),
+    }));
+  },
+
+  getQueueCount: (terminalId) => {
+    const { commandQueue } = get();
+    return commandQueue.filter((c) => c.terminalId === terminalId).length;
+  },
 
   bulkCloseByState: (states) => {
     const stateArray = Array.isArray(states) ? states : [states];
@@ -334,6 +425,11 @@ if (typeof window !== "undefined" && window.electron?.terminal?.onAgentStateChan
     useTerminalStore
       .getState()
       .updateAgentState(agentId, state as AgentState, undefined, timestamp);
+
+    // Process any queued commands when agent becomes idle or waiting
+    if (state === "waiting" || state === "idle") {
+      useTerminalStore.getState().processQueue(agentId);
+    }
   });
 }
 
