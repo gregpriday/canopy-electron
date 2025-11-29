@@ -13,6 +13,7 @@ import { WorktreeCard } from "./components/Worktree";
 import { ProblemsPanel } from "./components/Errors";
 import { TerminalPalette } from "./components/TerminalPalette";
 import { RecipeEditor } from "./components/TerminalRecipe/RecipeEditor";
+import { SettingsDialog } from "./components/Settings";
 import {
   useTerminalStore,
   useWorktreeSelectionStore,
@@ -160,6 +161,9 @@ function App() {
   const setProblemsPanelOpen = useErrorStore((state) => state.setPanelOpen);
   const removeError = useErrorStore((state) => state.removeError);
 
+  // Settings dialog state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   // Track if state has been restored (prevent StrictMode double-execution)
   const hasRestoredState = useRef(false);
 
@@ -242,8 +246,7 @@ function App() {
   }, []);
 
   const handleSettings = useCallback(() => {
-    // TODO: Implement settings modal
-    console.log("Open settings");
+    setIsSettingsOpen(true);
   }, []);
 
   // Handle context injection via keyboard shortcut
@@ -389,6 +392,9 @@ function App() {
         onSelect={terminalPalette.selectTerminal}
         onClose={terminalPalette.close}
       />
+
+      {/* Settings dialog */}
+      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </>
   );
 }
