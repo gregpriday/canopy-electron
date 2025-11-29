@@ -15,6 +15,7 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useTerminalStore, type TerminalInstance } from "@/store/terminalStore";
 import type { TerminalType } from "@/components/Terminal/TerminalPane";
+import type { AgentState } from "@/types";
 
 /** CopyTree output format */
 type CopyTreeFormat = "xml" | "json" | "markdown" | "tree" | "ndjson";
@@ -73,12 +74,23 @@ export interface UseContextInjectionReturn {
   clearError: () => void;
 }
 
+/**
+ * Check if the agent is busy (working state).
+ * Returns true if the agent should not receive input.
+ */
+function isAgentBusy(agentState: AgentState | undefined): boolean {
+  return agentState === "working";
+}
+
 export function useContextInjection(): UseContextInjectionReturn {
   const [isInjecting, setIsInjecting] = useState(false);
   const [progress, setProgress] = useState<CopyTreeProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const focusedId = useTerminalStore((state) => state.focusedId);
   const terminals = useTerminalStore((state) => state.terminals);
+  // Note: queueCommand is available but not used for context injection
+  // because context injection is an async operation that generates content
+  // before writing. Simple text payloads should use queueCommand directly.
 
   // Track injection state to filter stale progress events
   const isInjectingRef = useRef(false);
@@ -109,6 +121,22 @@ export function useContextInjection(): UseContextInjectionReturn {
         return;
       }
 
+      // Get terminal info to determine optimal format and check busy state
+      const terminal = terminals.find((t: TerminalInstance) => t.id === targetTerminalId);
+      if (!terminal) {
+        setError(`Terminal not found: ${targetTerminalId}`);
+        return;
+      }
+
+      // Check if agent is busy - warn but proceed since context generation takes time
+      // and the agent might finish by the time we're ready to inject
+      if (isAgentBusy(terminal.agentState)) {
+        console.log("Agent is busy, context will be injected when generation completes");
+        // The injection will proceed - by the time context is generated (can take seconds),
+        // the agent may have finished processing. If still busy when writing,
+        // the backend will still write (this is expected behavior for now).
+      }
+
       setIsInjecting(true);
       isInjectingRef.current = true;
       setError(null);
@@ -123,11 +151,6 @@ export function useContextInjection(): UseContextInjectionReturn {
           );
         }
 
-        // Get terminal info to determine optimal format
-        const terminal = terminals.find((t: TerminalInstance) => t.id === targetTerminalId);
-        if (!terminal) {
-          throw new Error(`Terminal not found: ${targetTerminalId}`);
-        }
         const format = getOptimalFormat(terminal.type);
 
         // Inject context into terminal with optimal format

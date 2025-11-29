@@ -17,12 +17,23 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Terminal, Bot, Sparkles, Command, X, Maximize2, Minimize2, Copy } from "lucide-react";
+import {
+  Terminal,
+  Bot,
+  Sparkles,
+  Command,
+  X,
+  Maximize2,
+  Minimize2,
+  Copy,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { XtermAdapter } from "./XtermAdapter";
 import { ErrorBanner } from "../Errors/ErrorBanner";
-import { useErrorStore, type RetryAction } from "@/store";
+import { useErrorStore, useTerminalStore, type RetryAction } from "@/store";
 import type { CopyTreeProgress } from "@/hooks/useContextInjection";
+import type { AgentState } from "@/types";
 
 export type TerminalType = "shell" | "claude" | "gemini" | "custom";
 
@@ -45,6 +56,8 @@ export interface TerminalPaneProps {
   isInjecting?: boolean;
   /** Current injection progress (if injecting) */
   injectionProgress?: CopyTreeProgress | null;
+  /** Current agent state (for agent terminals) */
+  agentState?: AgentState;
   /** Called when the pane is clicked/focused */
   onFocus: () => void;
   /** Called when the close button is clicked */
@@ -86,6 +99,7 @@ export function TerminalPane({
   isMaximized,
   isInjecting,
   injectionProgress,
+  agentState,
   onFocus,
   onClose,
   onInjectContext,
@@ -98,6 +112,14 @@ export function TerminalPane({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingValue, setEditingValue] = useState(title);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Get queued command count for this terminal
+  const queueCount = useTerminalStore(
+    useShallow((state) => state.commandQueue.filter((c) => c.terminalId === id).length)
+  );
+
+  // Determine if agent is working (busy)
+  const isAgentWorking = agentState === "working";
 
   // Get errors for this terminal - subscribe to store changes
   // Use useShallow to prevent infinite loops from .filter() creating new array references
@@ -291,6 +313,31 @@ export function TerminalPane({
             >
               [exit {exitCode}]
             </span>
+          )}
+
+          {/* Working state spinner */}
+          {isAgentWorking && (
+            <div
+              className="flex items-center gap-1 text-yellow-400 ml-1"
+              role="status"
+              aria-live="polite"
+              aria-label="Agent is working"
+            >
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              <span className="text-[10px] font-mono">Working</span>
+            </div>
+          )}
+
+          {/* Queue count indicator */}
+          {queueCount > 0 && (
+            <div
+              className="text-[10px] font-mono bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded ml-1"
+              role="status"
+              aria-live="polite"
+              title={`${queueCount} command${queueCount > 1 ? "s" : ""} queued`}
+            >
+              {queueCount} queued
+            </div>
           )}
         </div>
 

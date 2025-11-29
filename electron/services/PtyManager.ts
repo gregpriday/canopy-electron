@@ -9,7 +9,13 @@ import * as pty from "node-pty";
 import { EventEmitter } from "events";
 import { existsSync } from "fs";
 import { events } from "./events.js";
-import { nextAgentState, getStateChangeTimestamp, type AgentEvent } from "./AgentStateMachine.js";
+import {
+  nextAgentState,
+  getStateChangeTimestamp,
+  detectBusyState,
+  detectPrompt,
+  type AgentEvent,
+} from "./AgentStateMachine.js";
 import type { AgentState } from "../types/index.js";
 
 export interface PtySpawnOptions {
@@ -23,6 +29,9 @@ export interface PtySpawnOptions {
   title?: string;
   worktreeId?: string;
 }
+
+/** Buffer size for sliding window (characters) - enough to capture busy patterns across split packets */
+const OUTPUT_BUFFER_SIZE = 2000;
 
 interface TerminalInfo {
   id: string;
@@ -44,6 +53,11 @@ interface TerminalInfo {
   lastStateChange?: number;
   /** Error message if agentState is 'failed' */
   error?: string;
+  /**
+   * Sliding window buffer for pattern detection.
+   * Keeps last ~2000 chars to handle split packets (busy strings split across chunks).
+   */
+  outputBuffer: string;
 }
 
 export interface PtyManagerEvents {
@@ -155,8 +169,31 @@ export class PtyManager extends EventEmitter {
 
       // For agent terminals, track state based on output
       if (isAgentTerminal) {
-        // Check for prompt detection and update state accordingly
-        this.updateAgentState(id, { type: "output", data });
+        // Update sliding window buffer to handle split packets
+        terminal.outputBuffer += data;
+        if (terminal.outputBuffer.length > OUTPUT_BUFFER_SIZE) {
+          terminal.outputBuffer = terminal.outputBuffer.slice(-OUTPUT_BUFFER_SIZE);
+        }
+
+        // Check for busy state patterns (e.g., "(esc to interrupt)")
+        // Priority: busy > prompt > output (busy patterns override prompt detection)
+        // Use only recent slice (last 200 chars) to avoid indefinite matching of stale busy tokens
+        const recentSlice = terminal.outputBuffer.slice(-200);
+        const isBusy = options.type && detectBusyState(recentSlice, options.type);
+
+        if (isBusy) {
+          // Busy pattern detected - signal busy state (prevents transition to 'waiting')
+          this.updateAgentState(id, { type: "busy" });
+        } else {
+          // No busy pattern - check if recent output looks like a prompt (waiting for input)
+          // Use the buffer (not just current chunk) to handle colored/split prompts
+          const isPrompt = detectPrompt(recentSlice, options.type);
+          if (isPrompt) {
+            this.updateAgentState(id, { type: "prompt" });
+          } else {
+            this.updateAgentState(id, { type: "output", data });
+          }
+        }
 
         // Emit agent:output event for transcript capture
         if (agentId) {
@@ -213,6 +250,7 @@ export class PtyManager extends EventEmitter {
       spawnedAt,
       agentState: isAgentTerminal ? "idle" : undefined,
       lastStateChange: isAgentTerminal ? spawnedAt : undefined,
+      outputBuffer: "", // Initialize empty buffer for pattern detection
     });
 
     // Emit agent:spawned event for agent terminals (Claude, Gemini)

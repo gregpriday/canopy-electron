@@ -3,7 +3,9 @@
  * Enforces valid state transitions and provides heuristics for state detection.
  */
 
+import stripAnsi from "strip-ansi";
 import type { AgentState } from "../types/index.js";
+import { getAgentProfile } from "./ai/agentProfiles.js";
 
 /**
  * Events that can trigger agent state transitions.
@@ -11,6 +13,7 @@ import type { AgentState } from "../types/index.js";
 export type AgentEvent =
   | { type: "start" }
   | { type: "output"; data: string }
+  | { type: "busy" } // Detected busy/working indicator (e.g., "esc to interrupt")
   | { type: "prompt" } // Detected prompt/waiting for user input
   | { type: "input" } // User input received
   | { type: "exit"; code: number }
@@ -58,6 +61,15 @@ export function nextAgentState(current: AgentState, event: AgentEvent): AgentSta
       if (current === "idle") {
         return "working";
       }
+      break;
+
+    case "busy":
+      // Busy indicator detected - ensure we stay/transition to working
+      // This handles the case where we might be in 'waiting' and agent starts processing again
+      if (current === "waiting" || current === "idle") {
+        return "working";
+      }
+      // Already working - stay working
       break;
 
     case "output":
@@ -115,17 +127,28 @@ const MIN_PROMPT_LENGTH = 3;
  * Detect if a string appears to be a prompt waiting for user input.
  * Uses heuristic pattern matching on common prompt indicators.
  *
- * @param data - String data to analyze
+ * @param data - String data to analyze (should be ANSI-stripped)
+ * @param type - Optional terminal type for agent-specific pattern matching
  * @returns true if data appears to be a prompt, false otherwise
  */
-export function detectPrompt(data: string): boolean {
+export function detectPrompt(data: string, type?: string): boolean {
   // Ignore very short strings to reduce false positives
   if (data.length < MIN_PROMPT_LENGTH) {
     return false;
   }
 
-  // Check against known prompt patterns
-  return PROMPT_PATTERNS.some((pattern) => pattern.test(data));
+  // Strip ANSI codes to handle colored prompts
+  const cleanData = stripAnsi(data);
+
+  // Get agent-specific patterns if available
+  const profile = type ? getAgentProfile(type) : null;
+  const agentPatterns = profile?.promptPatterns || [];
+
+  // Combine generic and agent-specific patterns
+  const allPatterns = [...PROMPT_PATTERNS, ...agentPatterns];
+
+  // Check against all prompt patterns
+  return allPatterns.some((pattern) => pattern.test(cleanData));
 }
 
 /**
@@ -135,4 +158,24 @@ export function detectPrompt(data: string): boolean {
  */
 export function getStateChangeTimestamp(): number {
   return Date.now();
+}
+
+/**
+ * Detect if terminal output contains busy state indicators.
+ * Uses agent-specific patterns to detect when the agent is actively processing.
+ *
+ * IMPORTANT: Uses strip-ansi to remove ANSI color codes that often wrap
+ * status strings like "(esc to interrupt)".
+ *
+ * @param data - Terminal output data (may contain ANSI codes)
+ * @param type - Terminal type (claude, gemini, custom)
+ * @returns true if busy patterns are detected, false otherwise
+ */
+export function detectBusyState(data: string, type: string): boolean {
+  const profile = getAgentProfile(type);
+  if (!profile) return false;
+
+  // Strip ANSI color codes before pattern matching
+  const cleanData = stripAnsi(data);
+  return profile.busyPatterns.some((pattern) => pattern.test(cleanData));
 }
