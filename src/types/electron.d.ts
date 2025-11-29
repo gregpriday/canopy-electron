@@ -175,7 +175,11 @@ export interface ElectronAPI {
   };
   copyTree: {
     generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>;
-    injectToTerminal(terminalId: string, worktreeId: string): Promise<CopyTreeResult>;
+    injectToTerminal(
+      terminalId: string,
+      worktreeId: string,
+      options?: CopyTreeOptions
+    ): Promise<CopyTreeResult>;
     isAvailable(): Promise<boolean>;
   };
   system: {

@@ -398,8 +398,8 @@ export function registerIpcHandlers(
         };
       }
 
-      // Generate context
-      const result = await copyTreeService.generate(worktree.path);
+      // Generate context with options (format can be specified)
+      const result = await copyTreeService.generate(worktree.path, payload.options);
 
       if (result.error) {
         return result;

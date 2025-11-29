@@ -131,6 +131,7 @@ export interface CopyTreeResult {
 export interface CopyTreeInjectPayload {
   terminalId: string;
   worktreeId: string;
+  options?: CopyTreeOptions;
 }
 
 // PR detection types
