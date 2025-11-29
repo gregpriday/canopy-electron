@@ -55,6 +55,7 @@ import type { Project, ProjectSettings } from "../types/index.js";
 import { getTranscriptManager } from "../services/TranscriptManager.js";
 import { getAIConfig, setAIConfig, clearAIKey, validateAIKey } from "../services/ai/client.js";
 import { generateProjectIdentity } from "../services/ai/identity.js";
+import { runCommandDetector } from "../services/ai/RunCommandDetector.js";
 import type {
   HistoryGetSessionsPayload,
   HistoryGetSessionPayload,
@@ -1153,6 +1154,26 @@ export function registerIpcHandlers(
   };
   ipcMain.handle(CHANNELS.PROJECT_SAVE_SETTINGS, handleProjectSaveSettings);
   handlers.push(() => ipcMain.removeHandler(CHANNELS.PROJECT_SAVE_SETTINGS));
+
+  const handleProjectDetectRunners = async (
+    _event: Electron.IpcMainInvokeEvent,
+    projectId: string
+  ) => {
+    if (typeof projectId !== "string" || !projectId) {
+      console.warn("[IPC] Invalid project ID for detect runners:", projectId);
+      return [];
+    }
+
+    const project = projectStore.getProjectById(projectId);
+    if (!project) {
+      console.warn(`[IPC] Project not found for detect runners: ${projectId}`);
+      return [];
+    }
+
+    return await runCommandDetector.detect(project.path);
+  };
+  ipcMain.handle(CHANNELS.PROJECT_DETECT_RUNNERS, handleProjectDetectRunners);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.PROJECT_DETECT_RUNNERS));
 
   // ==========================================
   // History Handlers (Agent Transcripts)

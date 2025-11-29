@@ -428,6 +428,8 @@ export interface RunCommand {
   command: string;
   /** Optional icon name for UI display */
   icon?: string;
+  /** Optional description (e.g. the script content from package.json) */
+  description?: string;
 }
 
 /** Project-level settings that persist per repository */
