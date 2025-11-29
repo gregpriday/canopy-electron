@@ -55,6 +55,9 @@ const CHANNELS = {
   WORKTREE_REMOVE: "worktree:remove",
   WORKTREE_CREATE: "worktree:create",
   WORKTREE_LIST_BRANCHES: "worktree:list-branches",
+  WORKTREE_SET_ADAPTIVE_BACKOFF_CONFIG: "worktree:set-adaptive-backoff-config",
+  WORKTREE_IS_CIRCUIT_BREAKER_TRIPPED: "worktree:is-circuit-breaker-tripped",
+  WORKTREE_GET_ADAPTIVE_BACKOFF_METRICS: "worktree:get-adaptive-backoff-metrics",
 
   // Dev server channels
   DEVSERVER_START: "devserver:start",
@@ -169,6 +172,19 @@ const api: ElectronAPI = {
 
     listBranches: (rootPath: string) =>
       ipcRenderer.invoke(CHANNELS.WORKTREE_LIST_BRANCHES, { rootPath }),
+
+    setAdaptiveBackoffConfig: (enabled: boolean, maxInterval?: number, threshold?: number) =>
+      ipcRenderer.invoke(CHANNELS.WORKTREE_SET_ADAPTIVE_BACKOFF_CONFIG, {
+        enabled,
+        maxInterval,
+        threshold,
+      }),
+
+    isCircuitBreakerTripped: (worktreeId: string) =>
+      ipcRenderer.invoke(CHANNELS.WORKTREE_IS_CIRCUIT_BREAKER_TRIPPED, worktreeId),
+
+    getAdaptiveBackoffMetrics: (worktreeId: string) =>
+      ipcRenderer.invoke(CHANNELS.WORKTREE_GET_ADAPTIVE_BACKOFF_METRICS, worktreeId),
 
     onUpdate: (callback: (state: WorktreeState) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, state: WorktreeState) => callback(state);
