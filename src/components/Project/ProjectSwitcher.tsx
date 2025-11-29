@@ -115,9 +115,7 @@ export function ProjectSwitcher() {
           >
             <div className="flex items-center gap-2 text-left min-w-0">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-canopy-accent/10 border border-canopy-accent/20">
-                <span className="text-lg leading-none">
-                  {currentProject.emoji || "🌲"}
-                </span>
+                <span className="text-lg leading-none">{currentProject.emoji || "🌲"}</span>
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-canopy-text">
@@ -132,9 +130,7 @@ export function ProjectSwitcher() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64" align="start">
-          <DropdownMenuLabel className="text-xs text-canopy-text/60">
-            Projects
-          </DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-canopy-text/60">Projects</DropdownMenuLabel>
 
           {projects.map((project) => (
             <DropdownMenuItem
@@ -145,18 +141,13 @@ export function ProjectSwitcher() {
                 }
               }}
               disabled={isLoading}
-              className={cn(
-                "gap-2 p-2",
-                project.id === currentProject.id && "bg-canopy-border/30"
-              )}
+              className={cn("gap-2 p-2", project.id === currentProject.id && "bg-canopy-border/30")}
             >
               <div className="flex h-6 w-6 items-center justify-center rounded-md border border-canopy-border bg-canopy-bg">
                 {project.emoji || "🌲"}
               </div>
               <span className="flex-1 truncate">{project.name}</span>
-              {currentProject.id === project.id && (
-                <Check className="h-4 w-4 text-canopy-accent" />
-              )}
+              {currentProject.id === project.id && <Check className="h-4 w-4 text-canopy-accent" />}
             </DropdownMenuItem>
           ))}
 

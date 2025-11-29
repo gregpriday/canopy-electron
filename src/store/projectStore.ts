@@ -60,7 +60,7 @@ const createProjectStore: StateCreator<ProjectState> = (set, get) => ({
       set({
         error: "Failed to get current project",
         currentProject: null,
-        isLoading: false
+        isLoading: false,
       });
     }
   },
