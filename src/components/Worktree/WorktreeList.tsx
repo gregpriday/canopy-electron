@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WorktreeState } from "../../types";
 import { WorktreeCard } from "./WorktreeCard";
+import { WorktreeCardSkeleton } from "./WorktreeCardSkeleton";
 
 export interface WorktreeListProps {
   worktrees: WorktreeState[];
@@ -235,32 +236,28 @@ export function WorktreeList({
     }
   }, []);
 
-  // Loading state
+  // Loading state - show skeleton placeholders to prevent layout shift
+  // Keep the same container structure as loaded state for consistent layout
   if (isLoading) {
     return (
-      <div
-        className="flex flex-col items-center justify-center h-full p-4 text-gray-500"
-        role="status"
-        aria-live="polite"
-        aria-label="Loading worktrees"
-      >
-        <div className="animate-pulse">
-          <svg
-            className="w-8 h-8 mb-2 text-gray-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
+      <div className="relative h-full">
+        <div
+          className="flex flex-col gap-2 p-2 h-full overflow-y-auto"
+          tabIndex={0}
+          role="list"
+          aria-label="Worktree list"
+          aria-busy="true"
+        >
+          <div role="listitem">
+            <WorktreeCardSkeleton />
+          </div>
+          <div role="listitem">
+            <WorktreeCardSkeleton />
+          </div>
+          <div role="listitem">
+            <WorktreeCardSkeleton />
+          </div>
         </div>
-        <span className="text-sm">Loading worktrees...</span>
       </div>
     );
   }
