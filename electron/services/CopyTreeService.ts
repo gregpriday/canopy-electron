@@ -9,7 +9,7 @@
  * enabling better performance, streaming support, and richer progress feedback.
  */
 
-import { copy, ConfigManager, CopyTreeError, ValidationError } from "copytree";
+import { copy, ConfigManager } from "copytree";
 import type { CopyResult, CopyOptions as SdkCopyOptions } from "copytree";
 import * as path from "path";
 import * as fs from "fs/promises";
@@ -144,29 +144,39 @@ class CopyTreeService {
       };
     }
 
-    // Handle SDK specific errors
-    if (error instanceof ValidationError) {
-      return {
-        content: "",
-        fileCount: 0,
-        error: `Validation Error: ${error.message}`,
-      };
-    }
+    // Handle SDK specific errors by name (avoid importing broken error classes)
+    if (error instanceof Error) {
+      const errorName = error.name;
+      const errorCode = (error as Error & { code?: string }).code;
 
-    if (error instanceof CopyTreeError) {
+      if (errorName === "ValidationError") {
+        return {
+          content: "",
+          fileCount: 0,
+          error: `Validation Error: ${error.message}`,
+        };
+      }
+
+      if (errorName === "CopyTreeError" || errorCode) {
+        return {
+          content: "",
+          fileCount: 0,
+          error: `CopyTree Error${errorCode ? ` [${errorCode}]` : ""}: ${error.message}`,
+        };
+      }
+
       return {
         content: "",
         fileCount: 0,
-        error: `CopyTree Error [${error.code}]: ${error.message}`,
+        error: `CopyTree Error: ${error.message}`,
       };
     }
 
     // Generic error
-    const message = error instanceof Error ? error.message : String(error);
     return {
       content: "",
       fileCount: 0,
-      error: `CopyTree Error: ${message}`,
+      error: `CopyTree Error: ${String(error)}`,
     };
   }
 
