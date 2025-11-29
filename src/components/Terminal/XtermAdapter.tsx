@@ -361,10 +361,9 @@ export function XtermAdapter({ terminalId, onReady, onExit, className }: XtermAd
     <div
       ref={containerRef}
       className={cn(
-        "w-full h-full min-h-0 overflow-hidden", // Remove padding, add overflow-hidden
+        "w-full h-full min-h-0 overflow-hidden p-2.5", // Balanced padding for comfortable reading
         className
       )}
-      style={{ padding: "4px 0 0 8px" }} // Apply padding via style to avoid box model issues
     />
   );
 }
