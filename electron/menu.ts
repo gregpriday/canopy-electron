@@ -1,6 +1,9 @@
 import { Menu, dialog, BrowserWindow, shell } from "electron";
 import type { RecentDirectory } from "./ipc/types.js";
 import { store } from "./store.js";
+import { projectStore } from "./services/ProjectStore.js";
+import { worktreeService } from "./services/WorktreeService.js";
+import { CHANNELS } from "./ipc/channels.js";
 import path from "path";
 
 const MAX_RECENT_DIRECTORIES = 10;
@@ -140,23 +143,59 @@ function buildRecentDirectoriesMenu(
 }
 
 /**
- * Handles opening a directory: validates it, adds to recent list, and notifies renderer
+ * Handles opening a directory: now uses ProjectStore for multi-project support
  */
 async function handleDirectoryOpen(
   directoryPath: string,
   mainWindow: BrowserWindow
 ): Promise<void> {
-  // Store as lastDirectory
-  store.set("appState.lastDirectory", directoryPath);
+  try {
+    // 1. Add to ProjectStore (persists to projects.json)
+    const project = await projectStore.addProject(directoryPath);
 
-  // Add to recent directories
-  addToRecentDirectories(directoryPath);
+    // 2. Set as current project (updates lastOpened)
+    await projectStore.setCurrentProject(project.id);
 
-  // Rebuild menu to update recent list
-  createApplicationMenu(mainWindow);
+    // 3. Get the updated project with new lastOpened timestamp
+    const updatedProject = projectStore.getProjectById(project.id);
+    if (!updatedProject) {
+      throw new Error(`Project not found after update: ${project.id}`);
+    }
 
-  // Notify renderer of directory change
-  mainWindow.webContents.send("directory-changed", directoryPath);
+    // 4. Refresh worktree service to load worktrees from new project
+    // Note: Current worktreeService.refresh() only re-polls existing monitors
+    // Full project switching requires window reload (handled by renderer)
+    await worktreeService.refresh();
+
+    // 5. Notify renderer to update UI (use CHANNELS constant and send updated project)
+    mainWindow.webContents.send(CHANNELS.PROJECT_ON_SWITCH, updatedProject);
+
+    // 6. Update legacy recent menu (for backward compatibility)
+    addToRecentDirectories(directoryPath);
+    createApplicationMenu(mainWindow);
+
+    // 7. Legacy: also send directory-changed for any other listeners
+    mainWindow.webContents.send("directory-changed", directoryPath);
+  } catch (error) {
+    console.error("Failed to open project:", error);
+
+    // Provide more specific error messages
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof Error) {
+      if (error.message.includes("Not a git repository")) {
+        errorMessage = "The selected directory is not a Git repository.";
+      } else if (error.message.includes("ENOENT")) {
+        errorMessage = "The selected directory does not exist.";
+      } else if (error.message.includes("EACCES")) {
+        errorMessage = "Permission denied. You don't have access to this directory.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    // Show error dialog to user
+    dialog.showErrorBox("Failed to Open Project", errorMessage);
+  }
 }
 
 /**

@@ -150,7 +150,7 @@ export class ProjectStore {
       throw new Error(`Project not found: ${projectId}`);
     }
 
-    // Only allow safe fields to be updated (prevent mutation of id, path, lastOpened)
+    // Only allow safe fields to be updated (prevent mutation of id and path)
     const safeUpdates: Partial<Project> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;
     if (updates.emoji !== undefined) safeUpdates.emoji = updates.emoji;
@@ -159,6 +159,8 @@ export class ProjectStore {
       safeUpdates.aiGeneratedName = updates.aiGeneratedName;
     if (updates.aiGeneratedEmoji !== undefined)
       safeUpdates.aiGeneratedEmoji = updates.aiGeneratedEmoji;
+    // Allow lastOpened to be updated (for project switching and reopening)
+    if (updates.lastOpened !== undefined) safeUpdates.lastOpened = updates.lastOpened;
 
     const updated = { ...projects[index], ...safeUpdates };
     projects[index] = updated;
