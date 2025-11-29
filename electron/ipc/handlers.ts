@@ -1367,7 +1367,18 @@ export function registerIpcHandlers(
   handlers.push(() => ipcMain.removeHandler(CHANNELS.PROJECT_GET_ALL));
 
   const handleProjectGetCurrent = async () => {
-    return projectStore.getCurrentProject();
+    const currentProject = projectStore.getCurrentProject();
+
+    // Load worktrees for the current project if available
+    if (currentProject && worktreeService) {
+      try {
+        await worktreeService.loadProject(currentProject.path);
+      } catch (err) {
+        console.error("Failed to load worktrees for current project:", err);
+      }
+    }
+
+    return currentProject;
   };
   ipcMain.handle(CHANNELS.PROJECT_GET_CURRENT, handleProjectGetCurrent);
   handlers.push(() => ipcMain.removeHandler(CHANNELS.PROJECT_GET_CURRENT));
@@ -1474,6 +1485,15 @@ export function registerIpcHandlers(
     const updatedProject = projectStore.getProjectById(projectId);
     if (!updatedProject) {
       throw new Error(`Project not found after update: ${projectId}`);
+    }
+
+    // Load worktrees for this project
+    if (worktreeService) {
+      try {
+        await worktreeService.loadProject(project.path);
+      } catch (err) {
+        console.error("Failed to load worktrees for project:", err);
+      }
     }
 
     // Notify renderer with updated project

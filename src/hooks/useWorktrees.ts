@@ -73,9 +73,9 @@ export function useWorktrees(): UseWorktreesReturn {
 
           // Set initial active to first worktree if none selected
           if (states.length > 0 && activeId === null) {
-            // Prefer the current worktree (based on cwd), then main/master, then first
+            // Prefer the current worktree (based on cwd), then main worktree, then first
             const currentWorktree = states.find((s) => s.isCurrent);
-            const mainWorktree = states.find((s) => s.branch === "main" || s.branch === "master");
+            const mainWorktree = states.find((s) => s.isMainWorktree);
             const initialActive = currentWorktree?.id ?? mainWorktree?.id ?? states[0].id;
             setActiveId(initialActive);
 

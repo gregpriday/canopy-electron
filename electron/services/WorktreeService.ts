@@ -123,6 +123,60 @@ export class WorktreeService {
   private prServiceInitialized: boolean = false;
 
   /**
+   * Load a project from disk and initialize monitors.
+   * This is the primary entry point when opening a project.
+   *
+   * @param rootPath - Repository root path
+   */
+  public async loadProject(rootPath: string): Promise<void> {
+    logInfo("Loading project worktrees", { rootPath });
+
+    try {
+      this.ensureGitService(rootPath);
+
+      if (!this.gitService) {
+        throw new Error("GitService failed to initialize");
+      }
+
+      // 1. Get raw list from Git (now includes isMainWorktree flag)
+      const rawWorktrees = await this.gitService.listWorktrees();
+
+      // 2. Map to domain Worktree objects
+      const worktrees: Worktree[] = rawWorktrees.map((wt) => {
+        const name = wt.isMainWorktree
+          ? wt.path.split(/[/\\]/).pop() || "Main"
+          : wt.branch || wt.path.split(/[/\\]/).pop() || "Worktree";
+
+        return {
+          id: wt.path,
+          path: wt.path,
+          name: name,
+          branch: wt.branch,
+          isCurrent: false, // Will be updated by active ID logic
+          isMainWorktree: wt.isMainWorktree, // Pass this flag through
+          gitDir: getGitDir(wt.path) || undefined,
+        };
+      });
+
+      // 3. Sync monitors
+      await this.sync(
+        worktrees,
+        this.activeWorktreeId,
+        this.mainBranch,
+        this.watchingEnabled
+      );
+
+      // 4. Force an immediate refresh to populate statuses
+      await this.refresh();
+    } catch (error) {
+      logError("Failed to load project worktrees", {
+        error: (error as Error).message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Initialize or update monitors to match the current worktree list.
    *
    * This should be called:
@@ -522,9 +576,13 @@ export class WorktreeService {
       const worktreeList: Worktree[] = updatedWorktrees.map((wt) => ({
         id: wt.path,
         path: wt.path,
-        name: wt.path.split("/").pop() || wt.path,
+        name: wt.isMainWorktree
+          ? wt.path.split(/[/\\]/).pop() || "Main"
+          : wt.branch || wt.path.split(/[/\\]/).pop() || wt.path,
         branch: wt.branch,
         isCurrent: false, // Will be determined by sync
+        isMainWorktree: wt.isMainWorktree,
+        gitDir: getGitDir(wt.path) || undefined,
       }));
 
       if (worktreeList.length > 0) {

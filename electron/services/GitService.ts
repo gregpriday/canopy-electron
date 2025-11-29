@@ -176,13 +176,31 @@ export class GitService {
   /**
    * List all worktrees.
    * Uses git worktree list --porcelain for structured output.
+   * The first worktree in the output is always the main worktree (repository root).
    */
-  async listWorktrees(): Promise<Array<{ path: string; branch: string; bare: boolean }>> {
+  async listWorktrees(): Promise<
+    Array<{ path: string; branch: string; bare: boolean; isMainWorktree: boolean }>
+  > {
     try {
       const output = await this.git.raw(["worktree", "list", "--porcelain"]);
-      const worktrees: Array<{ path: string; branch: string; bare: boolean }> = [];
+      const worktrees: Array<{ path: string; branch: string; bare: boolean; isMainWorktree: boolean }> =
+        [];
 
       let currentWorktree: Partial<{ path: string; branch: string; bare: boolean }> = {};
+
+      // Helper to push worktree
+      const pushWorktree = () => {
+        if (currentWorktree.path) {
+          worktrees.push({
+            path: currentWorktree.path,
+            branch: currentWorktree.branch || "",
+            bare: currentWorktree.bare || false,
+            // The first worktree found is always the main worktree
+            isMainWorktree: worktrees.length === 0,
+          });
+        }
+        currentWorktree = {};
+      };
 
       for (const line of output.split("\n")) {
         if (line.startsWith("worktree ")) {
@@ -193,25 +211,12 @@ export class GitService {
           currentWorktree.bare = true;
         } else if (line === "") {
           // Empty line marks end of worktree entry
-          if (currentWorktree.path) {
-            worktrees.push({
-              path: currentWorktree.path,
-              branch: currentWorktree.branch || "",
-              bare: currentWorktree.bare || false,
-            });
-          }
-          currentWorktree = {};
+          pushWorktree();
         }
       }
 
       // Handle last entry if file doesn't end with empty line
-      if (currentWorktree.path) {
-        worktrees.push({
-          path: currentWorktree.path,
-          branch: currentWorktree.branch || "",
-          bare: currentWorktree.bare || false,
-        });
-      }
+      pushWorktree();
 
       return worktrees;
     } catch (error) {
