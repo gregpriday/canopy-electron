@@ -259,10 +259,26 @@ export function XtermAdapter({ terminalId, onReady, onExit, className }: XtermAd
 
       // Use requestAnimationFrame to debounce rapid resize events
       resizeFrameIdRef.current = requestAnimationFrame(() => {
+        // Guard against fitting when container has zero dimensions
+        // This prevents xterm crashes during layout thrashing or initial render
+        if (
+          !containerRef.current ||
+          containerRef.current.clientWidth === 0 ||
+          containerRef.current.clientHeight === 0
+        ) {
+          resizeFrameIdRef.current = null;
+          return;
+        }
+
         if (fitAddonRef.current && terminalRef.current) {
-          fitAddonRef.current.fit();
-          const { cols, rows } = terminalRef.current;
-          window.electron.terminal.resize(terminalId, cols, rows);
+          try {
+            fitAddonRef.current.fit();
+            const { cols, rows } = terminalRef.current;
+            window.electron.terminal.resize(terminalId, cols, rows);
+          } catch (e) {
+            // Suppress fit errors during rapid resizing
+            console.warn("Terminal fit failed:", e);
+          }
         }
         resizeFrameIdRef.current = null;
       });

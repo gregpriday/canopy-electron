@@ -14,6 +14,7 @@
  */
 
 import { useMemo, useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import { useTerminalStore, type TerminalInstance } from "@/store";
 import { useContextInjection } from "@/hooks/useContextInjection";
@@ -43,16 +44,21 @@ function EmptyState({ onAddTerminal }: { onAddTerminal: () => void }) {
 }
 
 export function TerminalGrid({ className, defaultCwd }: TerminalGridProps) {
-  const {
-    terminals,
-    focusedId,
-    maximizedId,
-    addTerminal,
-    removeTerminal,
-    updateTitle,
-    setFocused,
-    toggleMaximize,
-  } = useTerminalStore();
+  // Use useShallow to prevent infinite loops when destructuring store state
+  const { terminals, focusedId, maximizedId } = useTerminalStore(
+    useShallow((state) => ({
+      terminals: state.terminals,
+      focusedId: state.focusedId,
+      maximizedId: state.maximizedId,
+    }))
+  );
+
+  // Get actions separately - these are stable references
+  const addTerminal = useTerminalStore((state) => state.addTerminal);
+  const removeTerminal = useTerminalStore((state) => state.removeTerminal);
+  const updateTitle = useTerminalStore((state) => state.updateTitle);
+  const setFocused = useTerminalStore((state) => state.setFocused);
+  const toggleMaximize = useTerminalStore((state) => state.toggleMaximize);
 
   // Use context injection hook for progress tracking
   const { inject, cancel, isInjecting, progress } = useContextInjection();

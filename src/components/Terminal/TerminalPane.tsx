@@ -16,6 +16,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import { XtermAdapter } from "./XtermAdapter";
 import { ErrorBanner } from "../Errors/ErrorBanner";
@@ -89,8 +90,9 @@ export function TerminalPane({
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Get errors for this terminal - subscribe to store changes
-  const terminalErrors = useErrorStore((state) =>
-    state.errors.filter((e) => e.context?.terminalId === id && !e.dismissed)
+  // Use useShallow to prevent infinite loops from .filter() creating new array references
+  const terminalErrors = useErrorStore(
+    useShallow((state) => state.errors.filter((e) => e.context?.terminalId === id && !e.dismissed))
   );
   const dismissError = useErrorStore((state) => state.dismissError);
   const removeError = useErrorStore((state) => state.removeError);
