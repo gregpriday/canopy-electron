@@ -200,6 +200,7 @@ If you encounter native module errors, run `npm run rebuild` manually.
 ## Key Features
 
 ### Worktree Monitoring
+
 - Polls Git worktrees at configurable intervals
 - Tracks file changes with status (added, modified, deleted)
 - Calculates insertion/deletion statistics
@@ -208,6 +209,7 @@ If you encounter native module errors, run `npm run rebuild` manually.
 - Reads `.git/canopy/note` files for AI context
 
 ### Terminal Grid
+
 - Multiple terminal instances in a grid layout
 - Each terminal backed by node-pty process
 - Agent launchers: Claude, Gemini, Shell
@@ -216,18 +218,21 @@ If you encounter native module errors, run `npm run rebuild` manually.
 - Bulk actions (close by state, worktree, restart failed)
 
 ### Agent State Machine
+
 - Tracks agent lifecycle: idle → working → waiting → completed/failed
 - Heuristic-based state detection from terminal output
 - Visual state indicators in UI
 - Session transcripts with artifact extraction
 
 ### Context Injection
+
 - "Inject Context" button on worktree cards and terminals
 - Invokes CopyTree to generate context
 - Progress reporting during generation
 - Pastes context into active terminal
 
 ### Dev Server Management
+
 - Auto-detect dev/start scripts from package.json
 - Spawn and track dev server processes per worktree
 - Parse stdout for URL/port detection
@@ -235,6 +240,7 @@ If you encounter native module errors, run `npm run rebuild` manually.
 - Stream logs to UI
 
 ### OpenAI Integration
+
 - API key management with secure storage
 - Model selection (configurable)
 - Worktree summary generation
@@ -289,5 +295,6 @@ The app is feature-complete for its core functionality:
 - **Logs Panel**: Aggregated logging with filtering
 
 ### In Progress / Planned
+
 - Multi-project support (Phase 1-2 complete, UI pending)
 - Command palette (slash-command interface)
