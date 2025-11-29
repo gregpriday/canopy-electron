@@ -65,6 +65,9 @@ export interface CopyTreeOptions {
   exclude?: string | string[];
   always?: string[];
 
+  /** Explicit file/folder paths to include (used by file picker modal) */
+  includePaths?: string[];
+
   /** Git filtering */
   modified?: boolean;
   changed?: string;
@@ -111,6 +114,20 @@ export interface CopyTreeProgress {
   totalFiles?: number;
   /** Current file being processed (if known) */
   currentFile?: string;
+}
+
+/** File tree node for file picker */
+export interface FileTreeNode {
+  /** File/folder name */
+  name: string;
+  /** Relative path from worktree root */
+  path: string;
+  /** Whether this is a directory */
+  isDirectory: boolean;
+  /** File size in bytes (directories have size 0) */
+  size?: number;
+  /** Children (only populated for directories if expanded) */
+  children?: FileTreeNode[];
 }
 
 // ============================================================================
@@ -479,6 +496,7 @@ export interface ElectronAPI {
     ): Promise<CopyTreeResult>;
     isAvailable(): Promise<boolean>;
     cancel(): Promise<void>;
+    getFileTree(worktreeId: string, dirPath?: string): Promise<FileTreeNode[]>;
     onProgress(callback: (progress: CopyTreeProgress) => void): () => void;
   };
   system: {
