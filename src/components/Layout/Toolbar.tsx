@@ -142,7 +142,7 @@ export function Toolbar({
         </span>
       </div>
 
-<<<<<<< HEAD
+
       {/* 5. RIGHT ACTIONS:
         Wrapped in app-no-drag so they remain clickable
       */}
