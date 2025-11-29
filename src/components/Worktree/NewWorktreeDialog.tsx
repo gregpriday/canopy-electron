@@ -230,7 +230,9 @@ export function NewWorktreeDialog({
                         }
                       } catch (err: any) {
                         console.error("Failed to open directory picker:", err);
-                        setError(`Failed to open directory picker: ${err.message || "Unknown error"}`);
+                        setError(
+                          `Failed to open directory picker: ${err.message || "Unknown error"}`
+                        );
                       }
                     }}
                     disabled={creating || !window.electron?.directory?.openDialog}
