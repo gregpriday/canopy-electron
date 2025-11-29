@@ -33,9 +33,23 @@ npm run package
 
 # Rebuild native modules (node-pty) for Electron
 npm run rebuild
+```
 
-# Lint
-npm run lint
+## Code Quality
+
+```bash
+# Run all checks (typecheck + lint + format) - use before committing
+npm run check
+
+# Auto-fix formatting and lint issues
+npm run fix
+
+# Individual commands
+npm run typecheck     # TypeScript type checking (all configs)
+npm run lint          # Run ESLint
+npm run lint:fix      # Run ESLint with auto-fix
+npm run format        # Format code with Prettier
+npm run format:check  # Check formatting without changes
 ```
 
 ## Architecture
