@@ -2,8 +2,10 @@ import { useCallback, useState, useEffect, useMemo } from "react";
 import type { WorktreeState, WorktreeMood } from "../../types";
 import { ActivityLight } from "./ActivityLight";
 import { FileChangeList } from "./FileChangeList";
+import { TerminalCountBadge } from "./TerminalCountBadge";
 import { ErrorBanner } from "../Errors/ErrorBanner";
 import { useDevServer } from "../../hooks/useDevServer";
+import { useWorktreeTerminals } from "../../hooks/useWorktreeTerminals";
 import { useErrorStore, type RetryAction } from "../../store";
 import { useRecipeStore } from "../../store/recipeStore";
 import { cn } from "../../lib/utils";
@@ -94,6 +96,9 @@ export function WorktreeCard({
   const runRecipe = useRecipeStore((state) => state.runRecipe);
   const recipes = getRecipesForWorktree(worktree.id);
   const [runningRecipeId, setRunningRecipeId] = useState<string | null>(null);
+
+  // Terminal counts
+  const { counts: terminalCounts } = useWorktreeTerminals(worktree.id);
 
   const {
     state: serverState,
@@ -500,6 +505,9 @@ export function WorktreeCard({
           </button>
         </div>
       )}
+
+      {/* Terminal count badge */}
+      <TerminalCountBadge counts={terminalCounts} />
 
       {/* Agent note */}
       {effectiveNote && (

@@ -120,6 +120,16 @@ export type NotificationPayload = Omit<Notification, "id"> & { id?: string };
 
 export type TerminalType = "shell" | "claude" | "gemini" | "custom";
 
+/**
+ * State of an AI agent lifecycle.
+ * - 'idle': Agent is spawned but not actively working
+ * - 'working': Agent is actively processing/executing
+ * - 'waiting': Agent is waiting for input or external response
+ * - 'completed': Agent has finished successfully
+ * - 'failed': Agent encountered an unrecoverable error
+ */
+export type AgentState = "idle" | "working" | "waiting" | "completed" | "failed";
+
 export interface TerminalInstance {
   id: string;
   worktreeId?: string;
@@ -129,6 +139,12 @@ export interface TerminalInstance {
   pid?: number;
   cols: number;
   rows: number;
+  /** Current agent lifecycle state (for agent-type terminals) */
+  agentState?: AgentState;
+  /** Timestamp when agentState last changed (milliseconds since epoch) */
+  lastStateChange?: number;
+  /** Error message if agentState is 'failed' */
+  error?: string;
 }
 
 export interface PtySpawnOptions {
