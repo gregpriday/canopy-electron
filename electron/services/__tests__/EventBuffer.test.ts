@@ -304,9 +304,7 @@ describe("EventBuffer", () => {
       const taskEvent = all.find((e) => e.type === "task:created");
 
       expect(taskEvent).toBeDefined();
-      expect(taskEvent?.payload.description).toBe(
-        "[REDACTED - May contain sensitive information]"
-      );
+      expect(taskEvent?.payload.description).toBe("[REDACTED - May contain sensitive information]");
       expect(taskEvent?.payload.taskId).toBe("task-1"); // taskId should not be redacted
     });
 
