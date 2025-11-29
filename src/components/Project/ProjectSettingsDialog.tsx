@@ -110,54 +110,54 @@ export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSet
                 Configure quick commands to run in terminals. These will appear as buttons in the
                 sidebar.
               </p>
-            <div className="space-y-2">
-              {commands.map((cmd) => (
-                <div key={cmd.id} className="flex gap-2 items-center">
-                  <input
-                    className={cn(
-                      "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text w-1/3",
-                      "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
-                    )}
-                    value={cmd.name}
-                    onChange={(e) => handleChange(cmd.id, "name", e.target.value)}
-                    placeholder="Name (e.g. Dev Server)"
-                  />
-                  <input
-                    className={cn(
-                      "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text flex-1 font-mono",
-                      "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
-                    )}
-                    value={cmd.command}
-                    onChange={(e) => handleChange(cmd.id, "command", e.target.value)}
-                    placeholder="Command (e.g. npm run dev)"
-                  />
-                  <Button
-                    onClick={() => handleRemove(cmd.id)}
-                    variant="ghost"
-                    size="icon"
-                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8"
-                    title="Remove command"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+              <div className="space-y-2">
+                {commands.map((cmd) => (
+                  <div key={cmd.id} className="flex gap-2 items-center">
+                    <input
+                      className={cn(
+                        "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text w-1/3",
+                        "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
+                      )}
+                      value={cmd.name}
+                      onChange={(e) => handleChange(cmd.id, "name", e.target.value)}
+                      placeholder="Name (e.g. Dev Server)"
+                    />
+                    <input
+                      className={cn(
+                        "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text flex-1 font-mono",
+                        "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
+                      )}
+                      value={cmd.command}
+                      onChange={(e) => handleChange(cmd.id, "command", e.target.value)}
+                      placeholder="Command (e.g. npm run dev)"
+                    />
+                    <Button
+                      onClick={() => handleRemove(cmd.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8"
+                      title="Remove command"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
 
-              {commands.length === 0 && (
-                <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-canopy-border rounded">
-                  No run commands configured
-                </div>
-              )}
-            </div>
+                {commands.length === 0 && (
+                  <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-canopy-border rounded">
+                    No run commands configured
+                  </div>
+                )}
+              </div>
 
-            <Button
-              onClick={handleAddCommand}
-              variant="outline"
-              className="mt-3 w-full border-dashed border-canopy-border text-gray-400 hover:text-canopy-text hover:border-canopy-accent/50"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Command
-            </Button>
+              <Button
+                onClick={handleAddCommand}
+                variant="outline"
+                className="mt-3 w-full border-dashed border-canopy-border text-gray-400 hover:text-canopy-text hover:border-canopy-accent/50"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Command
+              </Button>
             </div>
           )}
         </div>
