@@ -19,7 +19,13 @@ export type ErrorType = "git" | "process" | "filesystem" | "network" | "config" 
 /**
  * Retry action types for different error sources
  */
-export type RetryAction = "copytree" | "devserver" | "terminal" | "git" | "worktree";
+export type RetryAction =
+  | "copytree"
+  | "devserver"
+  | "terminal"
+  | "git"
+  | "worktree"
+  | "injectContext";
 
 /**
  * Application error with context for display and recovery
@@ -65,8 +71,8 @@ interface ErrorStore {
   /** Last time an error was added (for rate limiting) */
   lastErrorTime: number;
 
-  /** Add a new error to the store */
-  addError: (error: Omit<AppError, "id" | "timestamp" | "dismissed">) => void;
+  /** Add a new error to the store and return the error ID */
+  addError: (error: Omit<AppError, "id" | "timestamp" | "dismissed">) => string;
   /** Dismiss a specific error (hide from UI but keep in log) */
   dismissError: (id: string) => void;
   /** Clear all errors */
@@ -105,13 +111,17 @@ const createErrorStore: StateCreator<ErrorStore> = (set, get) => ({
     const now = Date.now();
     const state = get();
 
-    // Rate limiting: deduplicate rapid-fire errors of the same type and message
+    // Rate limiting: deduplicate rapid-fire errors of the same type, message, and context
+    // Include context (terminalId/worktreeId/source) to avoid collapsing distinct failures
     // Only consider non-dismissed errors to allow re-surfacing after user dismissal
     const recentDuplicate = state.errors.find(
       (e) =>
         !e.dismissed &&
         e.type === error.type &&
         e.message === error.message &&
+        e.source === error.source &&
+        e.context?.terminalId === error.context?.terminalId &&
+        e.context?.worktreeId === error.context?.worktreeId &&
         now - e.timestamp < ERROR_RATE_LIMIT_MS
     );
 
@@ -121,7 +131,7 @@ const createErrorStore: StateCreator<ErrorStore> = (set, get) => ({
         errors: s.errors.map((e) => (e.id === recentDuplicate.id ? { ...e, timestamp: now } : e)),
         lastErrorTime: now,
       }));
-      return;
+      return recentDuplicate.id;
     }
 
     const newError: AppError = {
@@ -139,6 +149,8 @@ const createErrorStore: StateCreator<ErrorStore> = (set, get) => ({
         lastErrorTime: now,
       };
     });
+
+    return newError.id;
   },
 
   dismissError: (id) => {

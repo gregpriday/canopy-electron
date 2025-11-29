@@ -33,7 +33,7 @@ import { XtermAdapter } from "./XtermAdapter";
 import { ArtifactOverlay } from "./ArtifactOverlay";
 import { ErrorBanner } from "../Errors/ErrorBanner";
 import { useErrorStore, useTerminalStore, type RetryAction } from "@/store";
-import type { CopyTreeProgress } from "@/hooks/useContextInjection";
+import { useContextInjection, type CopyTreeProgress } from "@/hooks/useContextInjection";
 import type { AgentState } from "@/types";
 
 export type TerminalType = "shell" | "claude" | "gemini" | "custom";
@@ -114,6 +114,9 @@ export function TerminalPane({
   const [editingValue, setEditingValue] = useState(title);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // Get context injection hook for retry handling
+  const { inject } = useContextInjection();
+
   // Get queued command count for this terminal
   const queueCount = useTerminalStore(
     useShallow((state) => state.commandQueue.filter((c) => c.terminalId === id).length)
@@ -133,18 +136,35 @@ export function TerminalPane({
   // Handle error retry
   const handleErrorRetry = useCallback(
     async (errorId: string, action: RetryAction, args?: Record<string, unknown>) => {
-      if (window.electron?.errors?.retry) {
-        try {
+      try {
+        // Handle injectContext retry locally
+        if (action === "injectContext") {
+          const worktreeIdArg = args?.worktreeId as string | undefined;
+          const terminalIdArg = args?.terminalId as string | undefined;
+          const selectedPaths = args?.selectedPaths as string[] | undefined;
+
+          if (!worktreeIdArg || !terminalIdArg) {
+            console.error("Missing worktreeId or terminalId for injectContext retry");
+            return;
+          }
+
+          // Retry the injection
+          await inject(worktreeIdArg, terminalIdArg, selectedPaths);
+
+          // Explicitly remove error on success
+          removeError(errorId);
+        } else if (window.electron?.errors?.retry) {
+          // For other actions, delegate to the main process
           await window.electron.errors.retry(errorId, action, args);
           // On successful retry, remove the error from the store
           removeError(errorId);
-        } catch (error) {
-          console.error("Error retry failed:", error);
-          // Retry failed - the main process will send a new error event
         }
+      } catch (error) {
+        console.error("Error retry failed:", error);
+        // Retry failed - the main process will send a new error event
       }
     },
-    [removeError]
+    [inject, removeError]
   );
 
   // Reset exit state when terminal ID changes (e.g., terminal restart or reorder)

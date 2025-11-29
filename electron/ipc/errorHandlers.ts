@@ -32,7 +32,13 @@ type ErrorType = "git" | "process" | "filesystem" | "network" | "config" | "unkn
 /**
  * Retry action types
  */
-type RetryAction = "copytree" | "devserver" | "terminal" | "git" | "worktree";
+type RetryAction =
+  | "copytree"
+  | "devserver"
+  | "terminal"
+  | "git"
+  | "worktree"
+  | "injectContext";
 
 /**
  * App error structure sent to renderer
@@ -199,6 +205,11 @@ export class ErrorService {
       case "copytree":
         // CopyTree retries are handled directly by the renderer triggering
         // a new generate/inject call, so nothing to do here
+        break;
+
+      case "injectContext":
+        // Context injection retries are handled by the renderer (calling inject function)
+        // No main-process action needed
         break;
 
       case "git":

@@ -14,6 +14,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useTerminalStore, type TerminalInstance } from "@/store/terminalStore";
+import { useErrorStore } from "@/store/errorStore";
 import type { TerminalType } from "@/components/Terminal/TerminalPane";
 import type { AgentState } from "@/types";
 
@@ -88,6 +89,8 @@ export function useContextInjection(): UseContextInjectionReturn {
   const [error, setError] = useState<string | null>(null);
   const focusedId = useTerminalStore((state) => state.focusedId);
   const terminals = useTerminalStore((state) => state.terminals);
+  const addError = useErrorStore((state) => state.addError);
+  const removeError = useErrorStore((state) => state.removeError);
   // Note: queueCommand is available but not used for context injection
   // because context injection is an async operation that generates content
   // before writing. Simple text payloads should use queueCommand directly.
@@ -95,6 +98,7 @@ export function useContextInjection(): UseContextInjectionReturn {
   // Track injection state to filter stale progress events
   const isInjectingRef = useRef(false);
   const lastProgressAtRef = useRef(0);
+  const currentErrorIdRef = useRef<string | null>(null);
 
   // Subscribe to progress events from the main process
   useEffect(() => {
@@ -110,6 +114,14 @@ export function useContextInjection(): UseContextInjectionReturn {
       setProgress(p);
     });
     return unsubscribe;
+  }, []);
+
+  // Cleanup error reference on unmount
+  useEffect(() => {
+    return () => {
+      // Clear the error ID ref on unmount to prevent stale references
+      currentErrorIdRef.current = null;
+    };
   }, []);
 
   const inject = useCallback(
@@ -182,9 +194,49 @@ export function useContextInjection(): UseContextInjectionReturn {
         console.log(
           `Context injected (${result.fileCount} files as ${format.toUpperCase()}${pathInfo})`
         );
+
+        // Clear any previous error for this injection on success
+        if (currentErrorIdRef.current) {
+          removeError(currentErrorIdRef.current);
+          currentErrorIdRef.current = null;
+        }
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to inject context";
+        const details = e instanceof Error ? e.stack : undefined;
+
+        // Keep local error for hook consumers (if any)
         setError(message);
+
+        // Determine error type based on message content
+        let errorType: "config" | "process" | "filesystem" = "process";
+        if (message.includes("not installed") || message.includes("not found")) {
+          errorType = "config";
+        } else if (message.includes("permission") || message.includes("EACCES")) {
+          errorType = "filesystem";
+        }
+
+        // Add to global error store for Problems panel visibility
+        const errorId = addError({
+          type: errorType,
+          message: `Context injection failed: ${message}`,
+          details,
+          source: "ContextInjection",
+          context: {
+            worktreeId,
+            terminalId: targetTerminalId,
+          },
+          isTransient: true,
+          retryAction: "injectContext",
+          retryArgs: {
+            worktreeId,
+            terminalId: targetTerminalId,
+            selectedPaths,
+          },
+        });
+
+        // Store error ID for cleanup on successful retry
+        currentErrorIdRef.current = errorId;
+
         console.error("Context injection failed:", message);
       } finally {
         setIsInjecting(false);
@@ -192,7 +244,7 @@ export function useContextInjection(): UseContextInjectionReturn {
         setProgress(null);
       }
     },
-    [focusedId, terminals]
+    [focusedId, terminals, addError, removeError]
   );
 
   const cancel = useCallback(() => {
