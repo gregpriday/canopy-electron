@@ -205,6 +205,20 @@ export interface HistoryGetSessionsPayload {
 type ErrorType = "git" | "process" | "filesystem" | "network" | "config" | "unknown";
 type RetryAction = "copytree" | "devserver" | "terminal" | "git" | "worktree";
 
+// AI types
+export interface AIConfig {
+  hasKey: boolean;
+  model: string;
+  enabled: boolean;
+}
+
+export interface ProjectIdentity {
+  emoji: string;
+  title: string;
+  gradientStart: string;
+  gradientEnd: string;
+}
+
 interface AppError {
   id: string;
   timestamp: number;
@@ -321,6 +335,16 @@ export interface ElectronAPI {
     getSession(sessionId: string): Promise<AgentSession | null>;
     exportSession(sessionId: string, format: "json" | "markdown"): Promise<string | null>;
     deleteSession(sessionId: string): Promise<void>;
+  };
+
+  ai: {
+    getConfig(): Promise<AIConfig>;
+    setKey(apiKey: string): Promise<boolean>;
+    clearKey(): Promise<void>;
+    setModel(model: string): Promise<void>;
+    setEnabled(enabled: boolean): Promise<void>;
+    validateKey(apiKey: string): Promise<boolean>;
+    generateProjectIdentity(projectPath: string): Promise<ProjectIdentity | null>;
   };
 }
 

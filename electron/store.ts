@@ -41,6 +41,14 @@ export interface StoreSchema {
     list: Project[];
     currentProjectId?: string;
   };
+  userConfig: {
+    /** OpenAI API key for AI features (stored encrypted would be ideal, but electron-store uses keytar) */
+    openaiApiKey?: string;
+    /** AI model to use for summaries and identity generation */
+    aiModel?: string;
+    /** Whether AI features are enabled */
+    aiEnabled?: boolean;
+  };
 }
 
 export const store = new Store<StoreSchema>({
@@ -61,6 +69,11 @@ export const store = new Store<StoreSchema>({
     projects: {
       list: [],
       currentProjectId: undefined,
+    },
+    userConfig: {
+      openaiApiKey: undefined,
+      aiModel: "gpt-5-nano",
+      aiEnabled: true,
     },
   },
 });

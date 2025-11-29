@@ -98,6 +98,15 @@ export const CHANNELS = {
   HISTORY_GET_SESSION: "history:get-session",
   HISTORY_EXPORT_SESSION: "history:export-session",
   HISTORY_DELETE_SESSION: "history:delete-session",
+
+  // AI configuration channels
+  AI_GET_CONFIG: "ai:get-config",
+  AI_SET_KEY: "ai:set-key",
+  AI_CLEAR_KEY: "ai:clear-key",
+  AI_SET_MODEL: "ai:set-model",
+  AI_SET_ENABLED: "ai:set-enabled",
+  AI_VALIDATE_KEY: "ai:validate-key",
+  AI_GENERATE_PROJECT_IDENTITY: "ai:generate-project-identity",
 } as const;
 
 export type ChannelName = (typeof CHANNELS)[keyof typeof CHANNELS];

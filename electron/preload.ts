@@ -110,6 +110,15 @@ const CHANNELS = {
   HISTORY_GET_SESSION: "history:get-session",
   HISTORY_EXPORT_SESSION: "history:export-session",
   HISTORY_DELETE_SESSION: "history:delete-session",
+
+  // AI configuration channels
+  AI_GET_CONFIG: "ai:get-config",
+  AI_SET_KEY: "ai:set-key",
+  AI_CLEAR_KEY: "ai:clear-key",
+  AI_SET_MODEL: "ai:set-model",
+  AI_SET_ENABLED: "ai:set-enabled",
+  AI_VALIDATE_KEY: "ai:validate-key",
+  AI_GENERATE_PROJECT_IDENTITY: "ai:generate-project-identity",
 } as const;
 
 // Inlined types (must match electron/ipc/types.ts)
@@ -364,6 +373,20 @@ interface HistoryGetSessionsPayload {
 type ErrorType = "git" | "process" | "filesystem" | "network" | "config" | "unknown";
 type RetryAction = "copytree" | "devserver" | "terminal" | "git" | "worktree";
 
+// AI types
+interface AIConfig {
+  hasKey: boolean;
+  model: string;
+  enabled: boolean;
+}
+
+interface ProjectIdentity {
+  emoji: string;
+  title: string;
+  gradientStart: string;
+  gradientEnd: string;
+}
+
 interface AppError {
   id: string;
   timestamp: number;
@@ -479,6 +502,15 @@ export interface ElectronAPI {
     getSession(sessionId: string): Promise<AgentSession | null>;
     exportSession(sessionId: string, format: "json" | "markdown"): Promise<string | null>;
     deleteSession(sessionId: string): Promise<void>;
+  };
+  ai: {
+    getConfig(): Promise<AIConfig>;
+    setKey(apiKey: string): Promise<boolean>;
+    clearKey(): Promise<void>;
+    setModel(model: string): Promise<void>;
+    setEnabled(enabled: boolean): Promise<void>;
+    validateKey(apiKey: string): Promise<boolean>;
+    generateProjectIdentity(projectPath: string): Promise<ProjectIdentity | null>;
   };
 }
 
@@ -766,6 +798,28 @@ const api: ElectronAPI = {
 
     deleteSession: (sessionId: string): Promise<void> =>
       ipcRenderer.invoke(CHANNELS.HISTORY_DELETE_SESSION, sessionId),
+  },
+
+  // ==========================================
+  // AI API
+  // ==========================================
+  ai: {
+    getConfig: (): Promise<AIConfig> => ipcRenderer.invoke(CHANNELS.AI_GET_CONFIG),
+
+    setKey: (apiKey: string): Promise<boolean> => ipcRenderer.invoke(CHANNELS.AI_SET_KEY, apiKey),
+
+    clearKey: (): Promise<void> => ipcRenderer.invoke(CHANNELS.AI_CLEAR_KEY),
+
+    setModel: (model: string): Promise<void> => ipcRenderer.invoke(CHANNELS.AI_SET_MODEL, model),
+
+    setEnabled: (enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke(CHANNELS.AI_SET_ENABLED, enabled),
+
+    validateKey: (apiKey: string): Promise<boolean> =>
+      ipcRenderer.invoke(CHANNELS.AI_VALIDATE_KEY, apiKey),
+
+    generateProjectIdentity: (projectPath: string): Promise<ProjectIdentity | null> =>
+      ipcRenderer.invoke(CHANNELS.AI_GENERATE_PROJECT_IDENTITY, projectPath),
   },
 };
 

@@ -41,6 +41,13 @@ import { events } from "../services/events.js";
 import { projectStore } from "../services/ProjectStore.js";
 import type { Project } from "../types/index.js";
 import { getTranscriptManager } from "../services/TranscriptManager.js";
+import {
+  getAIConfig,
+  setAIConfig,
+  clearAIKey,
+  validateAIKey,
+} from "../services/ai/client.js";
+import { generateProjectIdentity } from "../services/ai/identity.js";
 import type {
   HistoryGetSessionsPayload,
   HistoryGetSessionPayload,
@@ -1016,6 +1023,106 @@ export function registerIpcHandlers(
   };
   ipcMain.handle(CHANNELS.HISTORY_DELETE_SESSION, handleHistoryDeleteSession);
   handlers.push(() => ipcMain.removeHandler(CHANNELS.HISTORY_DELETE_SESSION));
+
+  // ==========================================
+  // AI Configuration Handlers
+  // ==========================================
+
+  /**
+   * Get AI configuration status
+   */
+  const handleAIGetConfig = async () => {
+    return getAIConfig();
+  };
+  ipcMain.handle(CHANNELS.AI_GET_CONFIG, handleAIGetConfig);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_GET_CONFIG));
+
+  /**
+   * Set the OpenAI API key (validates before saving)
+   */
+  const handleAISetKey = async (
+    _event: Electron.IpcMainInvokeEvent,
+    apiKey: string
+  ): Promise<boolean> => {
+    if (typeof apiKey !== "string" || !apiKey.trim()) {
+      return false;
+    }
+
+    const isValid = await validateAIKey(apiKey.trim());
+    if (isValid) {
+      setAIConfig({ apiKey: apiKey.trim() });
+      return true;
+    }
+    return false;
+  };
+  ipcMain.handle(CHANNELS.AI_SET_KEY, handleAISetKey);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_SET_KEY));
+
+  /**
+   * Clear the API key
+   */
+  const handleAIClearKey = async () => {
+    clearAIKey();
+  };
+  ipcMain.handle(CHANNELS.AI_CLEAR_KEY, handleAIClearKey);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_CLEAR_KEY));
+
+  /**
+   * Set the AI model
+   */
+  const handleAISetModel = async (
+    _event: Electron.IpcMainInvokeEvent,
+    model: string
+  ) => {
+    if (typeof model !== "string" || !model.trim()) {
+      throw new Error("Invalid model: must be a non-empty string");
+    }
+    setAIConfig({ model: model.trim() });
+  };
+  ipcMain.handle(CHANNELS.AI_SET_MODEL, handleAISetModel);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_SET_MODEL));
+
+  /**
+   * Enable/disable AI features
+   */
+  const handleAISetEnabled = async (
+    _event: Electron.IpcMainInvokeEvent,
+    enabled: boolean
+  ) => {
+    setAIConfig({ enabled });
+  };
+  ipcMain.handle(CHANNELS.AI_SET_ENABLED, handleAISetEnabled);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_SET_ENABLED));
+
+  /**
+   * Validate an API key without saving
+   */
+  const handleAIValidateKey = async (
+    _event: Electron.IpcMainInvokeEvent,
+    apiKey: string
+  ): Promise<boolean> => {
+    if (typeof apiKey !== "string" || !apiKey.trim()) {
+      return false;
+    }
+    return await validateAIKey(apiKey.trim());
+  };
+  ipcMain.handle(CHANNELS.AI_VALIDATE_KEY, handleAIValidateKey);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_VALIDATE_KEY));
+
+  /**
+   * Generate project identity (emoji, name, colors) using AI
+   */
+  const handleAIGenerateProjectIdentity = async (
+    _event: Electron.IpcMainInvokeEvent,
+    projectPath: string
+  ) => {
+    if (typeof projectPath !== "string" || !projectPath.trim()) {
+      throw new Error("Invalid projectPath: must be a non-empty string");
+    }
+    return await generateProjectIdentity(projectPath.trim());
+  };
+  ipcMain.handle(CHANNELS.AI_GENERATE_PROJECT_IDENTITY, handleAIGenerateProjectIdentity);
+  handlers.push(() => ipcMain.removeHandler(CHANNELS.AI_GENERATE_PROJECT_IDENTITY));
 
   // Return cleanup function
   return () => {

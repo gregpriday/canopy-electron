@@ -44,6 +44,7 @@
     "fuse.js": "^7.1.0",
     "lucide-react": "^0.555.0",
     "node-pty": "^1.0.0",
+    "openai": "^6.9.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "simple-git": "^3.30.0",
