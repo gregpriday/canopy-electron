@@ -143,9 +143,7 @@ const createProjectStore: StateCreator<ProjectState> = (set, get) => ({
       const updatedProject = await window.electron.project.regenerateIdentity(projectId);
 
       // Update the projects list with the new identity
-      const projects = get().projects.map((p) =>
-        p.id === projectId ? updatedProject : p
-      );
+      const projects = get().projects.map((p) => (p.id === projectId ? updatedProject : p));
       set({ projects });
 
       // Update current project if this is the active one

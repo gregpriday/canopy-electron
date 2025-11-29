@@ -161,7 +161,8 @@ export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSet
                         </div>
                         {currentProject.aiGeneratedName && currentProject.aiGeneratedEmoji && (
                           <div className="text-xs text-gray-500 truncate">
-                            AI suggested: {currentProject.aiGeneratedEmoji} {currentProject.aiGeneratedName}
+                            AI suggested: {currentProject.aiGeneratedEmoji}{" "}
+                            {currentProject.aiGeneratedName}
                           </div>
                         )}
                         {currentProject.color && (
@@ -177,14 +178,17 @@ export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSet
                         disabled={isRegenerating}
                         className="shrink-0"
                       >
-                        <RefreshCw className={cn("h-4 w-4 mr-2", isRegenerating && "animate-spin")} />
+                        <RefreshCw
+                          className={cn("h-4 w-4 mr-2", isRegenerating && "animate-spin")}
+                        />
                         {isRegenerating ? "Regenerating..." : "Regenerate"}
                       </Button>
                     </div>
 
                     {currentProject.aiGeneratedName && (
                       <div className="text-xs text-gray-400 italic">
-                        Tip: Regenerate to get new AI suggestions based on your project name and structure.
+                        Tip: Regenerate to get new AI suggestions based on your project name and
+                        structure.
                       </div>
                     )}
                   </div>
