@@ -11,7 +11,6 @@ import { createWindowWithState } from "./windowState.js";
 import { store } from "./store.js";
 import { setLoggerWindow } from "./utils/logger.js";
 import { EventBuffer } from "./services/EventBuffer.js";
-import { events, ALL_EVENT_TYPES } from "./services/events.js";
 import { CHANNELS } from "./ipc/channels.js";
 import { createApplicationMenu } from "./menu.js";
 import { projectStore } from "./services/ProjectStore.js";
@@ -131,7 +130,6 @@ async function createWindow(): Promise<void> {
 
   // Track if the event inspector is subscribed to prevent unnecessary IPC traffic
   let eventInspectorActive = false;
-  const unsubscribers: Array<() => void> = [];
 
   // Listen for subscription status from renderer
   ipcMain.on(CHANNELS.EVENT_INSPECTOR_SUBSCRIBE, () => {
@@ -143,33 +141,18 @@ async function createWindow(): Promise<void> {
     console.log("[MAIN] Event inspector unsubscribed");
   });
 
-  // Subscribe to all event types and forward to renderer (only when inspector is active)
-  for (const eventType of ALL_EVENT_TYPES) {
-    const unsub = events.on(
-      eventType as any,
-      ((payload: any) => {
-        // Only forward if inspector is actively listening
-        if (!eventInspectorActive) return;
+  // Subscribe to EventBuffer's onRecord callback to forward sanitized events to renderer
+  // This eliminates the race condition and duplication from the previous approach
+  const unsubscribeFromEventBuffer = eventBuffer.onRecord((record) => {
+    // Only forward if inspector is actively listening
+    if (!eventInspectorActive) return;
 
-        // Get sanitized payload from the event buffer's record
-        const sanitizedPayload =
-          eventBuffer!.getAll().find((e) => e.type === eventType)?.payload ?? payload;
-
-        // Forward to renderer
-        sendToRenderer(mainWindow!, CHANNELS.EVENT_INSPECTOR_EVENT, {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: Date.now(),
-          type: eventType,
-          payload: sanitizedPayload,
-          source: "main",
-        });
-      }) as any
-    );
-    unsubscribers.push(unsub);
-  }
+    // Forward the exact record that was sanitized and stored
+    sendToRenderer(mainWindow!, CHANNELS.EVENT_INSPECTOR_EVENT, record);
+  });
 
   eventBufferUnsubscribe = () => {
-    unsubscribers.forEach((unsub) => unsub());
+    unsubscribeFromEventBuffer();
     ipcMain.removeAllListeners(CHANNELS.EVENT_INSPECTOR_SUBSCRIBE);
     ipcMain.removeAllListeners(CHANNELS.EVENT_INSPECTOR_UNSUBSCRIBE);
   };

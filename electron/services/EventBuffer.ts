@@ -44,9 +44,26 @@ export class EventBuffer {
   private buffer: EventRecord[] = [];
   private maxSize: number;
   private unsubscribe?: () => void;
+  private onRecordCallbacks: Array<(record: EventRecord) => void> = [];
 
   constructor(maxSize: number = 1000) {
     this.maxSize = maxSize;
+  }
+
+  /**
+   * Subscribe to event records as they are created.
+   * This ensures subscribers see the exact sanitized payload.
+   * @param callback Function called with each new event record
+   * @returns Unsubscribe function to remove the callback
+   */
+  public onRecord(callback: (record: EventRecord) => void): () => void {
+    this.onRecordCallbacks.push(callback);
+    return () => {
+      const index = this.onRecordCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this.onRecordCallbacks.splice(index, 1);
+      }
+    };
   }
 
   /**
@@ -127,9 +144,20 @@ export class EventBuffer {
   /**
    * Add an event to the buffer.
    * If buffer is full, removes the oldest event (FIFO).
+   * Notifies all onRecord subscribers after the event is recorded.
    */
   private push(event: EventRecord): void {
     this.buffer.push(event);
+
+    // Notify subscribers AFTER recording
+    // Use a shallow copy to prevent issues if a callback unsubscribes during iteration
+    for (const callback of [...this.onRecordCallbacks]) {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error("[EventBuffer] Error in onRecord callback:", error);
+      }
+    }
 
     // Enforce max size by removing oldest events
     while (this.buffer.length > this.maxSize) {
