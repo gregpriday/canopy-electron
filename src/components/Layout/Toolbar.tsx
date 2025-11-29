@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,18 +6,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { RefreshCw, Settings, Terminal, Bot, Sparkles, Plus, Command, AlertCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/dropdown-menu";
+import {
+  RefreshCw,
+  Settings,
+  Terminal,
+  Bot,
+  Sparkles,
+  Plus,
+  Command,
+  AlertCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ToolbarProps {
-  onLaunchAgent: (type: 'claude' | 'gemini' | 'shell') => void
-  onRefresh: () => void
-  onSettings: () => void
+  onLaunchAgent: (type: "claude" | "gemini" | "shell") => void;
+  onRefresh: () => void;
+  onSettings: () => void;
   /** Number of active errors */
-  errorCount?: number
+  errorCount?: number;
   /** Called when problems button is clicked */
-  onToggleProblems?: () => void
+  onToggleProblems?: () => void;
 }
 
 export function Toolbar({
@@ -37,7 +46,7 @@ export function Toolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onLaunchAgent('claude')}
+          onClick={() => onLaunchAgent("claude")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Claude (Ctrl+Shift+C)"
         >
@@ -47,7 +56,7 @@ export function Toolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onLaunchAgent('gemini')}
+          onClick={() => onLaunchAgent("gemini")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Gemini (Ctrl+Shift+G)"
         >
@@ -57,7 +66,7 @@ export function Toolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onLaunchAgent('shell')}
+          onClick={() => onLaunchAgent("shell")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Shell (Ctrl+T)"
         >
@@ -76,17 +85,17 @@ export function Toolbar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => onLaunchAgent('claude')}>
+            <DropdownMenuItem onClick={() => onLaunchAgent("claude")}>
               <Bot className="mr-2 h-4 w-4" />
               <span>Claude</span>
               <DropdownMenuShortcut>Ctrl+Shift+C</DropdownMenuShortcut>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onLaunchAgent('gemini')}>
+            <DropdownMenuItem onClick={() => onLaunchAgent("gemini")}>
               <Sparkles className="mr-2 h-4 w-4" />
               <span>Gemini</span>
               <DropdownMenuShortcut>Ctrl+Shift+G</DropdownMenuShortcut>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onLaunchAgent('shell')}>
+            <DropdownMenuItem onClick={() => onLaunchAgent("shell")}>
               <Terminal className="mr-2 h-4 w-4" />
               <span>Shell</span>
               <DropdownMenuShortcut>Ctrl+T</DropdownMenuShortcut>
@@ -103,9 +112,7 @@ export function Toolbar({
 
       {/* Title - centered */}
       <div className="flex-1 flex justify-center">
-        <span className="text-canopy-text font-semibold text-sm">
-          Canopy Command Center
-        </span>
+        <span className="text-canopy-text font-semibold text-sm">Canopy Command Center</span>
       </div>
 
       {/* Right side actions */}
@@ -116,16 +123,14 @@ export function Toolbar({
           size="sm"
           onClick={onToggleProblems}
           className={cn(
-            'text-canopy-text hover:bg-canopy-border hover:text-canopy-accent relative',
-            errorCount > 0 && 'text-red-400'
+            "text-canopy-text hover:bg-canopy-border hover:text-canopy-accent relative",
+            errorCount > 0 && "text-red-400"
           )}
           title="Problems (Ctrl+Shift+P)"
           aria-label={`Problems: ${errorCount} errors`}
         >
           <AlertCircle className="h-4 w-4" aria-hidden="true" />
-          {errorCount > 0 && (
-            <span className="ml-1 text-xs">{errorCount}</span>
-          )}
+          {errorCount > 0 && <span className="ml-1 text-xs">{errorCount}</span>}
         </Button>
         <Button
           variant="ghost"
@@ -147,5 +152,5 @@ export function Toolbar({
         </Button>
       </div>
     </header>
-  )
+  );
 }

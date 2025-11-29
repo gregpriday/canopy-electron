@@ -1,5 +1,5 @@
-import { BrowserWindow, screen } from 'electron';
-import { store } from './store.js';
+import { BrowserWindow, screen } from "electron";
+import { store } from "./store.js";
 
 function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
   let timeout: NodeJS.Timeout | null = null;
@@ -9,8 +9,10 @@ function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T 
   }) as T;
 }
 
-export function createWindowWithState(options: Electron.BrowserWindowConstructorOptions): BrowserWindow {
-  const windowState = store.get('windowState');
+export function createWindowWithState(
+  options: Electron.BrowserWindowConstructorOptions
+): BrowserWindow {
+  const windowState = store.get("windowState");
 
   // Create window with saved state (only include x/y if they are defined)
   const win = new BrowserWindow({
@@ -32,12 +34,22 @@ export function createWindowWithState(options: Electron.BrowserWindowConstructor
 
   // Check if window is mostly visible (at least 50% on screen)
   // If no saved position or window is not visible, center it
-  if (!display || bounds.width <= 0 || bounds.height <= 0 || windowState.x === undefined || windowState.y === undefined) {
+  if (
+    !display ||
+    bounds.width <= 0 ||
+    bounds.height <= 0 ||
+    windowState.x === undefined ||
+    windowState.y === undefined
+  ) {
     win.center();
   } else {
     const workArea = display.workArea;
-    const visibleWidth = Math.min(bounds.x + bounds.width, workArea.x + workArea.width) - Math.max(bounds.x, workArea.x);
-    const visibleHeight = Math.min(bounds.y + bounds.height, workArea.y + workArea.height) - Math.max(bounds.y, workArea.y);
+    const visibleWidth =
+      Math.min(bounds.x + bounds.width, workArea.x + workArea.width) -
+      Math.max(bounds.x, workArea.x);
+    const visibleHeight =
+      Math.min(bounds.y + bounds.height, workArea.y + workArea.height) -
+      Math.max(bounds.y, workArea.y);
     const visibleArea = Math.max(0, visibleWidth) * Math.max(0, visibleHeight);
     const totalArea = bounds.width * bounds.height;
 
@@ -47,7 +59,12 @@ export function createWindowWithState(options: Electron.BrowserWindowConstructor
   }
 
   // Track last normal bounds for maximized state
-  let lastNormalBounds = { x: windowState.x, y: windowState.y, width: windowState.width, height: windowState.height };
+  let lastNormalBounds = {
+    x: windowState.x,
+    y: windowState.y,
+    width: windowState.width,
+    height: windowState.height,
+  };
 
   // Save state on changes
   const saveState = () => {
@@ -61,7 +78,7 @@ export function createWindowWithState(options: Electron.BrowserWindowConstructor
       lastNormalBounds = { ...currentBounds };
     }
 
-    store.set('windowState', {
+    store.set("windowState", {
       x: lastNormalBounds.x,
       y: lastNormalBounds.y,
       width: lastNormalBounds.width,
@@ -73,9 +90,9 @@ export function createWindowWithState(options: Electron.BrowserWindowConstructor
   // Debounce state saves to reduce disk writes
   const debouncedSaveState = debounce(saveState, 500);
 
-  win.on('resize', debouncedSaveState);
-  win.on('move', debouncedSaveState);
-  win.on('close', saveState); // Save immediately on close
+  win.on("resize", debouncedSaveState);
+  win.on("move", debouncedSaveState);
+  win.on("close", saveState); // Save immediately on close
 
   return win;
 }

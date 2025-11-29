@@ -1,13 +1,17 @@
-import { EventEmitter } from 'events';
-import type { NotificationPayload, DevServerState, AgentState, TaskState, TerminalType } from '../types/index.js';
-import type { WorktreeState } from './WorktreeMonitor.js';
+import { EventEmitter } from "events";
+import type {
+  NotificationPayload,
+  DevServerState,
+  AgentState,
+  TaskState,
+  TerminalType,
+} from "../types/index.js";
+import type { WorktreeState } from "./WorktreeMonitor.js";
 
-export type ModalId =
-  | 'worktree'
-  | 'command-palette';
+export type ModalId = "worktree" | "command-palette";
 export interface ModalContextMap {
   worktree: undefined;
-  'command-palette': undefined;
+  "command-palette": undefined;
 }
 
 // 1. Define Payload Types
@@ -31,7 +35,7 @@ export interface UIModalClosePayload {
 }
 
 export interface WatcherChangePayload {
-  type: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir';
+  type: "add" | "change" | "unlink" | "addDir" | "unlinkDir";
   path: string; // Absolute path
 }
 
@@ -44,48 +48,47 @@ export interface WorktreeSelectByNamePayload {
   query: string; // Pattern to match against branch/name/path
 }
 
-
 // 2. Define Event Map
 export type CanopyEventMap = {
-  'sys:ready': { cwd: string };
-  'sys:refresh': void;
-  'sys:quit': void;
-  'sys:config:reload': void;
+  "sys:ready": { cwd: string };
+  "sys:refresh": void;
+  "sys:quit": void;
+  "sys:config:reload": void;
 
-  'file:open': { path: string };
-  'file:copy-tree': CopyTreePayload;
-  'file:copy-path': CopyPathPayload;
+  "file:open": { path: string };
+  "file:copy-tree": CopyTreePayload;
+  "file:copy-path": CopyPathPayload;
 
-  'ui:notify': NotificationPayload;
-  'ui:filter:set': { query: string };
-  'ui:filter:clear': void;
-  'ui:modal:open': UIModalOpenPayload;
-  'ui:modal:close': UIModalClosePayload;
+  "ui:notify": NotificationPayload;
+  "ui:filter:set": { query: string };
+  "ui:filter:clear": void;
+  "ui:modal:open": UIModalOpenPayload;
+  "ui:modal:close": UIModalClosePayload;
 
-  'sys:worktree:switch': { worktreeId: string };
-  'sys:worktree:refresh': void;
-  'sys:worktree:cycle': WorktreeCyclePayload;
-  'sys:worktree:selectByName': WorktreeSelectByNamePayload;
-  'sys:worktree:update': WorktreeState;
-  'sys:worktree:remove': { worktreeId: string };
+  "sys:worktree:switch": { worktreeId: string };
+  "sys:worktree:refresh": void;
+  "sys:worktree:cycle": WorktreeCyclePayload;
+  "sys:worktree:selectByName": WorktreeSelectByNamePayload;
+  "sys:worktree:update": WorktreeState;
+  "sys:worktree:remove": { worktreeId: string };
 
-  'watcher:change': WatcherChangePayload;
+  "watcher:change": WatcherChangePayload;
 
   // Dev Server Events
-  'server:update': DevServerState;
-  'server:error': { worktreeId: string; error: string };
+  "server:update": DevServerState;
+  "server:error": { worktreeId: string; error: string };
 
   // Pull Request Events
-  'sys:pr:detected': {
+  "sys:pr:detected": {
     worktreeId: string;
     prNumber: number;
     prUrl: string;
-    prState: 'open' | 'merged' | 'closed';
+    prState: "open" | "merged" | "closed";
     /** The issue number this PR was detected for */
     issueNumber: number;
   };
   /** Emitted when PR data should be cleared (branch/issue changed or worktree removed) */
-  'sys:pr:cleared': {
+  "sys:pr:cleared": {
     worktreeId: string;
   };
 
@@ -97,7 +100,7 @@ export type CanopyEventMap = {
    * Emitted when a new AI agent (Claude, Gemini, etc.) is spawned in a terminal.
    * Use this to track agent creation and associate agents with worktrees.
    */
-  'agent:spawned': {
+  "agent:spawned": {
     /** Unique identifier for this agent instance */
     agentId: string;
     /** ID of the terminal where the agent is running */
@@ -114,7 +117,7 @@ export type CanopyEventMap = {
    * Emitted when an agent's state changes (e.g., idle → working → completed).
    * Use this for status indicators and monitoring agent activity.
    */
-  'agent:state-changed': {
+  "agent:state-changed": {
     agentId: string;
     state: AgentState;
     previousState?: AgentState;
@@ -127,7 +130,7 @@ export type CanopyEventMap = {
    * WARNING: The data field may contain sensitive information (API keys, secrets, etc.).
    * Consumers should sanitize or redact before logging/persisting.
    */
-  'agent:output': {
+  "agent:output": {
     agentId: string;
     data: string;
     timestamp: number;
@@ -136,7 +139,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when an agent completes its work successfully.
    */
-  'agent:completed': {
+  "agent:completed": {
     agentId: string;
     /** Exit code from the underlying process */
     exitCode: number;
@@ -148,7 +151,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when an agent encounters an error and cannot continue.
    */
-  'agent:failed': {
+  "agent:failed": {
     agentId: string;
     error: string;
     timestamp: number;
@@ -157,7 +160,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when an agent is explicitly killed (by user action or system).
    */
-  'agent:killed': {
+  "agent:killed": {
     agentId: string;
     /** Optional reason for killing (e.g., 'user-request', 'timeout', 'cleanup') */
     reason?: string;
@@ -174,7 +177,7 @@ export type CanopyEventMap = {
    * WARNING: The description field may contain sensitive information.
    * Consumers should sanitize before logging/persisting.
    */
-  'task:created': {
+  "task:created": {
     taskId: string;
     description: string;
     worktreeId?: string;
@@ -184,7 +187,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a task is assigned to an agent.
    */
-  'task:assigned': {
+  "task:assigned": {
     taskId: string;
     agentId: string;
     timestamp: number;
@@ -193,7 +196,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a task's state changes.
    */
-  'task:state-changed': {
+  "task:state-changed": {
     taskId: string;
     state: TaskState;
     previousState?: TaskState;
@@ -203,7 +206,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a task is completed successfully.
    */
-  'task:completed': {
+  "task:completed": {
     taskId: string;
     /** ID of the agent that completed this task */
     agentId?: string;
@@ -220,7 +223,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a task fails.
    */
-  'task:failed': {
+  "task:failed": {
     taskId: string;
     /** ID of the agent that failed this task */
     agentId?: string;
@@ -240,7 +243,7 @@ export type CanopyEventMap = {
    * Emitted when a new run (execution instance) starts.
    * Runs track individual execution attempts, useful for retries and history.
    */
-  'run:started': {
+  "run:started": {
     runId: string;
     taskId?: string;
     agentId: string;
@@ -250,7 +253,7 @@ export type CanopyEventMap = {
   /**
    * Emitted to report run progress.
    */
-  'run:progress': {
+  "run:progress": {
     runId: string;
     step: string;
     /** Progress percentage (0-100), if available */
@@ -261,7 +264,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a run completes successfully.
    */
-  'run:completed': {
+  "run:completed": {
     runId: string;
     /** ID of the agent that executed this run */
     agentId?: string;
@@ -275,7 +278,7 @@ export type CanopyEventMap = {
   /**
    * Emitted when a run encounters an error.
    */
-  'run:error': {
+  "run:error": {
     runId: string;
     /** ID of the agent that executed this run */
     agentId?: string;
@@ -289,50 +292,50 @@ export type CanopyEventMap = {
 // 3. Create Bus
 // Export all event type keys for external consumers
 export const ALL_EVENT_TYPES: Array<keyof CanopyEventMap> = [
-  'sys:ready',
-  'sys:refresh',
-  'sys:quit',
-  'sys:config:reload',
-  'file:open',
-  'file:copy-tree',
-  'file:copy-path',
-  'ui:notify',
-  'ui:filter:set',
-  'ui:filter:clear',
-  'ui:modal:open',
-  'ui:modal:close',
-  'sys:worktree:switch',
-  'sys:worktree:refresh',
-  'sys:worktree:cycle',
-  'sys:worktree:selectByName',
-  'sys:worktree:update',
-  'sys:worktree:remove',
-  'watcher:change',
-  'server:update',
-  'server:error',
-  'sys:pr:detected',
-  'sys:pr:cleared',
-  'agent:spawned',
-  'agent:state-changed',
-  'agent:output',
-  'agent:completed',
-  'agent:failed',
-  'agent:killed',
-  'task:created',
-  'task:assigned',
-  'task:state-changed',
-  'task:completed',
-  'task:failed',
-  'run:started',
-  'run:progress',
-  'run:completed',
-  'run:error',
-]
+  "sys:ready",
+  "sys:refresh",
+  "sys:quit",
+  "sys:config:reload",
+  "file:open",
+  "file:copy-tree",
+  "file:copy-path",
+  "ui:notify",
+  "ui:filter:set",
+  "ui:filter:clear",
+  "ui:modal:open",
+  "ui:modal:close",
+  "sys:worktree:switch",
+  "sys:worktree:refresh",
+  "sys:worktree:cycle",
+  "sys:worktree:selectByName",
+  "sys:worktree:update",
+  "sys:worktree:remove",
+  "watcher:change",
+  "server:update",
+  "server:error",
+  "sys:pr:detected",
+  "sys:pr:cleared",
+  "agent:spawned",
+  "agent:state-changed",
+  "agent:output",
+  "agent:completed",
+  "agent:failed",
+  "agent:killed",
+  "task:created",
+  "task:assigned",
+  "task:state-changed",
+  "task:completed",
+  "task:failed",
+  "run:started",
+  "run:progress",
+  "run:completed",
+  "run:error",
+];
 
 class TypedEventBus {
   private bus = new EventEmitter();
 
-  private debugEnabled = process.env.CANOPY_DEBUG_EVENTS === '1';
+  private debugEnabled = process.env.CANOPY_DEBUG_EVENTS === "1";
 
   constructor() {
     this.bus.setMaxListeners(100);
@@ -341,9 +344,7 @@ class TypedEventBus {
   // Subscribe
   on<K extends keyof CanopyEventMap>(
     event: K,
-    listener: CanopyEventMap[K] extends void
-      ? () => void
-      : (payload: CanopyEventMap[K]) => void
+    listener: CanopyEventMap[K] extends void ? () => void : (payload: CanopyEventMap[K]) => void
   ) {
     this.bus.on(event, listener as (...args: any[]) => void); // Type assertion for EventEmitter
     // Return un-subscriber for easy useEffect cleanup
@@ -354,9 +355,7 @@ class TypedEventBus {
 
   off<K extends keyof CanopyEventMap>(
     event: K,
-    listener: CanopyEventMap[K] extends void
-      ? () => void
-      : (payload: CanopyEventMap[K]) => void
+    listener: CanopyEventMap[K] extends void ? () => void : (payload: CanopyEventMap[K]) => void
   ) {
     this.bus.off(event, listener as (...args: any[]) => void);
   }
@@ -367,8 +366,7 @@ class TypedEventBus {
     ...args: CanopyEventMap[K] extends void ? [] : [CanopyEventMap[K]]
   ) {
     if (this.debugEnabled) {
-      // eslint-disable-next-line no-console
-      console.log('[events]', event, args[0]);
+      console.log("[events]", event, args[0]);
     }
     this.bus.emit(event, ...(args as any[]));
   }

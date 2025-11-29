@@ -1,7 +1,7 @@
-import { promises as fs } from 'fs';
-import { basename } from 'path';
-import { execSync } from 'child_process';
-import type { RecentDirectory } from '../ipc/types.js';
+import { promises as fs } from "fs";
+import { basename } from "path";
+import { execSync } from "child_process";
+import type { RecentDirectory } from "../ipc/types.js";
 
 /**
  * Detect git root directory for a given path
@@ -9,10 +9,10 @@ import type { RecentDirectory } from '../ipc/types.js';
  */
 async function detectGitRoot(dirPath: string): Promise<string | undefined> {
   try {
-    const result = execSync('git rev-parse --show-toplevel', {
+    const result = execSync("git rev-parse --show-toplevel", {
       cwd: dirPath,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
     });
     return result.trim();
   } catch {
@@ -41,7 +41,7 @@ export async function updateRecentDirectories(
     const realPath = await fs.realpath(newPath);
 
     // Remove existing entry if present (dedupe)
-    const filtered = currentRecents.filter(r => r.path !== realPath);
+    const filtered = currentRecents.filter((r) => r.path !== realPath);
 
     // Try to detect git root
     let gitRoot: string | undefined;
@@ -67,7 +67,7 @@ export async function updateRecentDirectories(
     return filtered.slice(0, MAX_RECENT_DIRECTORIES);
   } catch (error) {
     // If path doesn't exist or can't be resolved, don't add it
-    console.warn('[recentDirectories] Failed to add directory:', newPath, error);
+    console.warn("[recentDirectories] Failed to add directory:", newPath, error);
     return currentRecents;
   }
 }
@@ -83,7 +83,7 @@ export function removeRecentDirectory(
   currentRecents: RecentDirectory[],
   pathToRemove: string
 ): RecentDirectory[] {
-  return currentRecents.filter(r => r.path !== pathToRemove);
+  return currentRecents.filter((r) => r.path !== pathToRemove);
 }
 
 /**
@@ -127,7 +127,7 @@ export function truncatePathForMenu(path: string, maxLength = 60): string {
     return path;
   }
 
-  const ellipsis = '...';
+  const ellipsis = "...";
   const charsToShow = maxLength - ellipsis.length;
   const frontChars = Math.ceil(charsToShow / 2);
   const backChars = Math.floor(charsToShow / 2);

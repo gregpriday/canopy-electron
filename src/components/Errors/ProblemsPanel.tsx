@@ -11,47 +11,47 @@
  * - Keyboard navigation support
  */
 
-import { useMemo, useCallback, useState } from 'react'
-import { cn } from '@/lib/utils'
-import { useErrorStore, type AppError, type RetryAction } from '@/store'
+import { useMemo, useCallback, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useErrorStore, type AppError, type RetryAction } from "@/store";
 
 export interface ProblemsPanelProps {
   /** Whether the panel is open */
-  isOpen: boolean
+  isOpen: boolean;
   /** Called when user closes the panel */
-  onClose: () => void
+  onClose: () => void;
   /** Called when user clicks retry */
-  onRetry?: (id: string, action: RetryAction, args?: Record<string, unknown>) => void
+  onRetry?: (id: string, action: RetryAction, args?: Record<string, unknown>) => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 const ERROR_TYPE_LABELS: Record<string, string> = {
-  git: 'Git',
-  process: 'Process',
-  filesystem: 'File',
-  network: 'Network',
-  config: 'Config',
-  unknown: 'Other',
-}
+  git: "Git",
+  process: "Process",
+  filesystem: "File",
+  network: "Network",
+  config: "Config",
+  unknown: "Other",
+};
 
 const ERROR_TYPE_COLORS: Record<string, string> = {
-  git: 'text-orange-400',
-  process: 'text-yellow-400',
-  filesystem: 'text-blue-400',
-  network: 'text-purple-400',
-  config: 'text-amber-400',
-  unknown: 'text-red-400',
-}
+  git: "text-orange-400",
+  process: "text-yellow-400",
+  filesystem: "text-blue-400",
+  network: "text-purple-400",
+  config: "text-amber-400",
+  unknown: "text-red-400",
+};
 
 function formatTimestamp(timestamp: number): string {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false,
-  })
+  });
 }
 
 function ErrorRow({
@@ -61,29 +61,29 @@ function ErrorRow({
   onDismiss,
   onRetry,
 }: {
-  error: AppError
-  isExpanded: boolean
-  onToggleExpand: () => void
-  onDismiss: () => void
-  onRetry?: () => void
+  error: AppError;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onDismiss: () => void;
+  onRetry?: () => void;
 }) {
-  const typeLabel = ERROR_TYPE_LABELS[error.type] || 'Error'
-  const typeColor = ERROR_TYPE_COLORS[error.type] || 'text-red-400'
-  const canRetry = error.isTransient && error.retryAction && onRetry
+  const typeLabel = ERROR_TYPE_LABELS[error.type] || "Error";
+  const typeColor = ERROR_TYPE_COLORS[error.type] || "text-red-400";
+  const canRetry = error.isTransient && error.retryAction && onRetry;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      onToggleExpand()
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggleExpand();
     }
-  }
+  };
 
   return (
     <>
       <tr
         className={cn(
-          'hover:bg-gray-800/50 cursor-pointer transition-colors',
-          isExpanded && 'bg-gray-800/30'
+          "hover:bg-gray-800/50 cursor-pointer transition-colors",
+          isExpanded && "bg-gray-800/30"
         )}
         onClick={onToggleExpand}
         onKeyDown={handleKeyDown}
@@ -95,22 +95,18 @@ function ErrorRow({
         <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
           {formatTimestamp(error.timestamp)}
         </td>
-        <td className={cn('px-3 py-2 text-xs whitespace-nowrap font-medium', typeColor)}>
+        <td className={cn("px-3 py-2 text-xs whitespace-nowrap font-medium", typeColor)}>
           {typeLabel}
         </td>
-        <td className="px-3 py-2 text-sm text-gray-300 truncate max-w-md">
-          {error.message}
-        </td>
-        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
-          {error.source || '-'}
-        </td>
+        <td className="px-3 py-2 text-sm text-gray-300 truncate max-w-md">{error.message}</td>
+        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">{error.source || "-"}</td>
         <td className="px-3 py-2 whitespace-nowrap">
           <div className="flex items-center gap-1">
             {canRetry && (
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  onRetry()
+                  e.stopPropagation();
+                  onRetry();
                 }}
                 className="px-2 py-0.5 text-xs text-green-300 hover:text-green-200 border border-green-600 hover:bg-green-800/50 rounded"
               >
@@ -119,8 +115,8 @@ function ErrorRow({
             )}
             <button
               onClick={(e) => {
-                e.stopPropagation()
-                onDismiss()
+                e.stopPropagation();
+                onDismiss();
               }}
               className="p-1 text-gray-500 hover:text-gray-300"
               aria-label="Dismiss error"
@@ -142,60 +138,55 @@ function ErrorRow({
                 {Object.entries(error.context)
                   .filter(([, v]) => v !== undefined)
                   .map(([k, v]) => `${k}=${v}`)
-                  .join(', ')}
+                  .join(", ")}
               </div>
             )}
           </td>
         </tr>
       )}
     </>
-  )
+  );
 }
 
-export function ProblemsPanel({
-  isOpen,
-  onClose,
-  onRetry,
-  className,
-}: ProblemsPanelProps) {
-  const errors = useErrorStore((state) => state.errors)
-  const dismissError = useErrorStore((state) => state.dismissError)
-  const clearAll = useErrorStore((state) => state.clearAll)
+export function ProblemsPanel({ isOpen, onClose, onRetry, className }: ProblemsPanelProps) {
+  const errors = useErrorStore((state) => state.errors);
+  const dismissError = useErrorStore((state) => state.dismissError);
+  const clearAll = useErrorStore((state) => state.clearAll);
 
   // Track expanded rows
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   const activeErrors = useMemo(() => {
-    return errors.filter((e) => !e.dismissed)
-  }, [errors])
+    return errors.filter((e) => !e.dismissed);
+  }, [errors]);
 
   const handleToggleExpand = useCallback((id: string) => {
     setExpandedIds((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(id)) {
-        next.delete(id)
+        next.delete(id);
       } else {
-        next.add(id)
+        next.add(id);
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
   const handleOpenLogs = useCallback(() => {
-    window.electron?.errors?.openLogs()
-  }, [])
+    window.electron?.errors?.openLogs();
+  }, []);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div
       className={cn(
-        'fixed inset-x-0 bottom-0 z-50 bg-canopy-bg border-t border-canopy-border shadow-2xl',
-        'transform transition-transform duration-200',
-        isOpen ? 'translate-y-0' : 'translate-y-full',
+        "fixed inset-x-0 bottom-0 z-50 bg-canopy-bg border-t border-canopy-border shadow-2xl",
+        "transform transition-transform duration-200",
+        isOpen ? "translate-y-0" : "translate-y-full",
         className
       )}
-      style={{ height: '40vh', maxHeight: '400px', minHeight: '200px' }}
+      style={{ height: "40vh", maxHeight: "400px", minHeight: "200px" }}
       role="region"
       aria-label="Problems panel"
     >
@@ -218,8 +209,8 @@ export function ProblemsPanel({
             onClick={clearAll}
             disabled={activeErrors.length === 0}
             className={cn(
-              'px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded',
-              activeErrors.length === 0 && 'opacity-50 cursor-not-allowed'
+              "px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded",
+              activeErrors.length === 0 && "opacity-50 cursor-not-allowed"
             )}
           >
             Clear All
@@ -244,15 +235,9 @@ export function ProblemsPanel({
           <table className="w-full">
             <thead className="sticky top-0 bg-canopy-sidebar border-b border-canopy-border">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 w-24">
-                  Time
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 w-20">
-                  Type
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400">
-                  Message
-                </th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 w-24">Time</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 w-20">Type</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-400">Message</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 w-28">
                   Source
                 </th>
@@ -281,7 +266,7 @@ export function ProblemsPanel({
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default ProblemsPanel
+export default ProblemsPanel;

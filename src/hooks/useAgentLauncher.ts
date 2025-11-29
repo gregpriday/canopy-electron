@@ -10,49 +10,49 @@
  * - Checks CLI availability and caches results
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { useTerminalStore, type AddTerminalOptions } from '@/store/terminalStore'
-import { useWorktrees } from './useWorktrees'
-import { isElectronAvailable } from './useElectron'
+import { useCallback, useEffect, useState } from "react";
+import { useTerminalStore, type AddTerminalOptions } from "@/store/terminalStore";
+import { useWorktrees } from "./useWorktrees";
+import { isElectronAvailable } from "./useElectron";
 
-export type AgentType = 'claude' | 'gemini' | 'shell'
+export type AgentType = "claude" | "gemini" | "shell";
 
 interface AgentConfig {
-  type: AgentType
-  title: string
-  command?: string
+  type: AgentType;
+  title: string;
+  command?: string;
 }
 
 const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
   claude: {
-    type: 'claude',
-    title: 'Claude',
-    command: 'claude',
+    type: "claude",
+    title: "Claude",
+    command: "claude",
   },
   gemini: {
-    type: 'gemini',
-    title: 'Gemini',
-    command: 'gemini',
+    type: "gemini",
+    title: "Gemini",
+    command: "gemini",
   },
   shell: {
-    type: 'shell',
-    title: 'Shell',
+    type: "shell",
+    title: "Shell",
     command: undefined, // Plain shell, no command
   },
-}
+};
 
 export interface AgentAvailability {
-  claude: boolean
-  gemini: boolean
+  claude: boolean;
+  gemini: boolean;
 }
 
 export interface UseAgentLauncherReturn {
   /** Launch an agent terminal */
-  launchAgent: (type: AgentType) => Promise<string | null>
+  launchAgent: (type: AgentType) => Promise<string | null>;
   /** CLI availability status */
-  availability: AgentAvailability
+  availability: AgentAvailability;
   /** Whether availability check is in progress */
-  isCheckingAvailability: boolean
+  isCheckingAvailability: boolean;
 }
 
 /**
@@ -86,87 +86,90 @@ export interface UseAgentLauncherReturn {
  * ```
  */
 export function useAgentLauncher(): UseAgentLauncherReturn {
-  const { addTerminal } = useTerminalStore()
-  const { worktreeMap, activeId } = useWorktrees()
+  const { addTerminal } = useTerminalStore();
+  const { worktreeMap, activeId } = useWorktrees();
 
   const [availability, setAvailability] = useState<AgentAvailability>({
     claude: true, // Optimistically assume available until checked
     gemini: true,
-  })
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(true)
+  });
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(true);
 
   // Check CLI availability on mount
   useEffect(() => {
     if (!isElectronAvailable()) {
-      setIsCheckingAvailability(false)
-      return
+      setIsCheckingAvailability(false);
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
 
     async function checkAvailability() {
       try {
         const [claudeAvailable, geminiAvailable] = await Promise.all([
-          window.electron.system.checkCommand('claude'),
-          window.electron.system.checkCommand('gemini'),
-        ])
+          window.electron.system.checkCommand("claude"),
+          window.electron.system.checkCommand("gemini"),
+        ]);
 
         if (!cancelled) {
           setAvailability({
             claude: claudeAvailable,
             gemini: geminiAvailable,
-          })
+          });
         }
       } catch (error) {
-        console.error('Failed to check CLI availability:', error)
+        console.error("Failed to check CLI availability:", error);
         // Keep optimistic defaults on error
       } finally {
         if (!cancelled) {
-          setIsCheckingAvailability(false)
+          setIsCheckingAvailability(false);
         }
       }
     }
 
-    checkAvailability()
+    checkAvailability();
 
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
-  const launchAgent = useCallback(async (type: AgentType): Promise<string | null> => {
-    if (!isElectronAvailable()) {
-      console.warn('Electron API not available')
-      return null
-    }
+  const launchAgent = useCallback(
+    async (type: AgentType): Promise<string | null> => {
+      if (!isElectronAvailable()) {
+        console.warn("Electron API not available");
+        return null;
+      }
 
-    const config = AGENT_CONFIGS[type]
+      const config = AGENT_CONFIGS[type];
 
-    // Get CWD from active worktree or fall back to home directory
-    const activeWorktree = activeId ? worktreeMap.get(activeId) : null
-    // Pass empty string if no worktree; Main process handles HOME fallback
-    const cwd = activeWorktree?.path || ''
+      // Get CWD from active worktree or fall back to home directory
+      const activeWorktree = activeId ? worktreeMap.get(activeId) : null;
+      // Pass empty string if no worktree; Main process handles HOME fallback
+      const cwd = activeWorktree?.path || "";
 
-    const options: AddTerminalOptions = {
-      type: config.type,
-      title: config.title,
-      cwd,
-      worktreeId: activeId || undefined,
-      command: config.command,
-    }
+      const options: AddTerminalOptions = {
+        type: config.type,
+        title: config.title,
+        cwd,
+        worktreeId: activeId || undefined,
+        command: config.command,
+      };
 
-    try {
-      const terminalId = await addTerminal(options)
-      return terminalId
-    } catch (error) {
-      console.error(`Failed to launch ${type} agent:`, error)
-      return null
-    }
-  }, [activeId, worktreeMap, addTerminal])
+      try {
+        const terminalId = await addTerminal(options);
+        return terminalId;
+      } catch (error) {
+        console.error(`Failed to launch ${type} agent:`, error);
+        return null;
+      }
+    },
+    [activeId, worktreeMap, addTerminal]
+  );
 
   return {
     launchAgent,
     availability,
     isCheckingAvailability,
-  }
+  };
 }

@@ -9,42 +9,42 @@
  */
 export type KeyAction =
   // Navigation actions
-  | 'nav.up'
-  | 'nav.down'
-  | 'nav.left'
-  | 'nav.right'
-  | 'nav.pageUp'
-  | 'nav.pageDown'
-  | 'nav.home'
-  | 'nav.end'
-  | 'nav.expand'
-  | 'nav.collapse'
-  | 'nav.primary'
+  | "nav.up"
+  | "nav.down"
+  | "nav.left"
+  | "nav.right"
+  | "nav.pageUp"
+  | "nav.pageDown"
+  | "nav.home"
+  | "nav.end"
+  | "nav.expand"
+  | "nav.collapse"
+  | "nav.primary"
 
   // File operations
-  | 'file.open'
-  | 'file.copyPath'
-  | 'file.copyTree'
+  | "file.open"
+  | "file.copyPath"
+  | "file.copyTree"
 
   // UI actions
-  | 'ui.refresh'
-  | 'ui.escape'
+  | "ui.refresh"
+  | "ui.escape"
 
   // Git/Worktree actions
-  | 'git.toggle'
-  | 'worktree.next'
-  | 'worktree.panel'
+  | "git.toggle"
+  | "worktree.next"
+  | "worktree.panel"
 
   // System actions
-  | 'app.quit'
-  | 'app.forceQuit';
+  | "app.quit"
+  | "app.forceQuit";
 
 /**
  * Available keymap presets.
  * - 'standard': Default keybindings (arrow keys, etc.)
  * - 'vim': Vim-style keybindings (hjkl navigation, etc.)
  */
-export type KeymapPreset = 'standard' | 'vim';
+export type KeymapPreset = "standard" | "vim";
 
 /**
  * Configuration for keyboard shortcuts.
@@ -71,35 +71,35 @@ export interface KeyMapConfig {
  */
 export const STANDARD_KEYMAP: Record<KeyAction, string[]> = {
   // Navigation
-  'nav.up': ['up'],
-  'nav.down': ['down'],
-  'nav.left': ['left'],
-  'nav.right': ['right'],
-  'nav.pageUp': ['pageup'],
-  'nav.pageDown': ['pagedown'],
-  'nav.home': ['home'],
-  'nav.end': ['end'],
-  'nav.expand': ['right', 'l'],
-  'nav.collapse': ['left', 'h'],
-  'nav.primary': ['return', 'enter'],
+  "nav.up": ["up"],
+  "nav.down": ["down"],
+  "nav.left": ["left"],
+  "nav.right": ["right"],
+  "nav.pageUp": ["pageup"],
+  "nav.pageDown": ["pagedown"],
+  "nav.home": ["home"],
+  "nav.end": ["end"],
+  "nav.expand": ["right", "l"],
+  "nav.collapse": ["left", "h"],
+  "nav.primary": ["return", "enter"],
 
   // File operations
-  'file.open': ['o'],
-  'file.copyPath': ['y'],
-  'file.copyTree': ['c'],
+  "file.open": ["o"],
+  "file.copyPath": ["y"],
+  "file.copyTree": ["c"],
 
   // UI actions
-  'ui.refresh': ['r'],
-  'ui.escape': ['escape', 'q'],
+  "ui.refresh": ["r"],
+  "ui.escape": ["escape", "q"],
 
   // Git/Worktree
-  'git.toggle': ['g'],
-  'worktree.next': ['w'],
-  'worktree.panel': ['W'],
+  "git.toggle": ["g"],
+  "worktree.next": ["w"],
+  "worktree.panel": ["W"],
 
   // System
-  'app.quit': ['q'],
-  'app.forceQuit': ['Q'],
+  "app.quit": ["q"],
+  "app.forceQuit": ["Q"],
 };
 
 /**
@@ -108,35 +108,35 @@ export const STANDARD_KEYMAP: Record<KeyAction, string[]> = {
  */
 export const VIM_KEYMAP: Record<KeyAction, string[]> = {
   // Navigation (vim-style)
-  'nav.up': ['k', 'up'],
-  'nav.down': ['j', 'down'],
-  'nav.left': ['h', 'left'],
-  'nav.right': ['l', 'right'],
-  'nav.pageUp': ['ctrl+u', 'pageup'],
-  'nav.pageDown': ['ctrl+d', 'pagedown'],
-  'nav.home': ['gg'],
-  'nav.end': ['G'],
-  'nav.expand': ['l', 'right'],
-  'nav.collapse': ['h', 'left'],
-  'nav.primary': ['return', 'enter'],
+  "nav.up": ["k", "up"],
+  "nav.down": ["j", "down"],
+  "nav.left": ["h", "left"],
+  "nav.right": ["l", "right"],
+  "nav.pageUp": ["ctrl+u", "pageup"],
+  "nav.pageDown": ["ctrl+d", "pagedown"],
+  "nav.home": ["gg"],
+  "nav.end": ["G"],
+  "nav.expand": ["l", "right"],
+  "nav.collapse": ["h", "left"],
+  "nav.primary": ["return", "enter"],
 
   // File operations
-  'file.open': ['o'],
-  'file.copyPath': ['yy'],
-  'file.copyTree': ['yc'],
+  "file.open": ["o"],
+  "file.copyPath": ["yy"],
+  "file.copyTree": ["yc"],
 
   // UI actions
-  'ui.refresh': ['r'],
-  'ui.escape': ['escape'],
+  "ui.refresh": ["r"],
+  "ui.escape": ["escape"],
 
   // Git/Worktree
-  'git.toggle': ['gs'],
-  'worktree.next': ['gw'],
-  'worktree.panel': ['gW'],
+  "git.toggle": ["gs"],
+  "worktree.next": ["gw"],
+  "worktree.panel": ["gW"],
 
   // System
-  'app.quit': [':q'],
-  'app.forceQuit': [':q!'],
+  "app.quit": [":q"],
+  "app.forceQuit": [":q!"],
 };
 
 /**
@@ -144,9 +144,9 @@ export const VIM_KEYMAP: Record<KeyAction, string[]> = {
  */
 export function getPresetKeymap(preset: KeymapPreset): Record<KeyAction, string[]> {
   switch (preset) {
-    case 'vim':
+    case "vim":
       return VIM_KEYMAP;
-    case 'standard':
+    case "standard":
     default:
       return STANDARD_KEYMAP;
   }
@@ -157,7 +157,7 @@ export function getPresetKeymap(preset: KeymapPreset): Record<KeyAction, string[
  * Returns a complete keymap with all actions bound.
  */
 export function resolveKeymap(config?: KeyMapConfig): Record<KeyAction, string[]> {
-  const preset = config?.preset ?? 'standard';
+  const preset = config?.preset ?? "standard";
   const base = getPresetKeymap(preset);
 
   if (!config?.overrides) {

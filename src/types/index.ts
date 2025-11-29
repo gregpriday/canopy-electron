@@ -18,7 +18,7 @@
 // Git Types
 // ============================================================================
 
-export type GitStatus = 'modified' | 'added' | 'deleted' | 'untracked' | 'ignored' | 'renamed';
+export type GitStatus = "modified" | "added" | "deleted" | "untracked" | "ignored" | "renamed";
 
 export interface FileChangeDetail {
   path: string;
@@ -45,7 +45,7 @@ export interface WorktreeChanges {
 // Worktree Types
 // ============================================================================
 
-export type WorktreeMood = 'stable' | 'active' | 'stale' | 'error';
+export type WorktreeMood = "stable" | "active" | "stale" | "error";
 
 /**
  * AI summary generation status for a worktree.
@@ -54,7 +54,7 @@ export type WorktreeMood = 'stable' | 'active' | 'stale' | 'error';
  * - 'disabled': No OPENAI_API_KEY set, AI features unavailable
  * - 'error': API errors occurred, showing fallback text
  */
-export type AISummaryStatus = 'active' | 'loading' | 'disabled' | 'error';
+export type AISummaryStatus = "active" | "loading" | "disabled" | "error";
 
 export interface Worktree {
   id: string;
@@ -74,7 +74,7 @@ export interface Worktree {
   issueNumber?: number;
   prNumber?: number;
   prUrl?: string;
-  prState?: 'open' | 'merged' | 'closed';
+  prState?: "open" | "merged" | "closed";
 }
 
 export interface WorktreeState extends Worktree {
@@ -88,7 +88,7 @@ export interface WorktreeState extends Worktree {
 // Dev Server Types
 // ============================================================================
 
-export type DevServerStatus = 'stopped' | 'starting' | 'running' | 'error';
+export type DevServerStatus = "stopped" | "starting" | "running" | "error";
 
 export interface DevServerState {
   worktreeId: string;
@@ -104,7 +104,7 @@ export interface DevServerState {
 // Notification Types
 // ============================================================================
 
-export type NotificationType = 'info' | 'success' | 'error' | 'warning';
+export type NotificationType = "info" | "success" | "error" | "warning";
 
 export interface Notification {
   id: string;
@@ -112,13 +112,13 @@ export interface Notification {
   type: NotificationType;
 }
 
-export type NotificationPayload = Omit<Notification, 'id'> & { id?: string };
+export type NotificationPayload = Omit<Notification, "id"> & { id?: string };
 
 // ============================================================================
 // Terminal Types
 // ============================================================================
 
-export type TerminalType = 'shell' | 'claude' | 'gemini' | 'custom';
+export type TerminalType = "shell" | "claude" | "gemini" | "custom";
 
 export interface TerminalInstance {
   id: string;
@@ -150,29 +150,29 @@ export interface TerminalDimensions {
 // ============================================================================
 
 export type KeyAction =
-  | 'nav.up'
-  | 'nav.down'
-  | 'nav.left'
-  | 'nav.right'
-  | 'nav.pageUp'
-  | 'nav.pageDown'
-  | 'nav.home'
-  | 'nav.end'
-  | 'nav.expand'
-  | 'nav.collapse'
-  | 'nav.primary'
-  | 'file.open'
-  | 'file.copyPath'
-  | 'file.copyTree'
-  | 'ui.refresh'
-  | 'ui.escape'
-  | 'git.toggle'
-  | 'worktree.next'
-  | 'worktree.panel'
-  | 'app.quit'
-  | 'app.forceQuit';
+  | "nav.up"
+  | "nav.down"
+  | "nav.left"
+  | "nav.right"
+  | "nav.pageUp"
+  | "nav.pageDown"
+  | "nav.home"
+  | "nav.end"
+  | "nav.expand"
+  | "nav.collapse"
+  | "nav.primary"
+  | "file.open"
+  | "file.copyPath"
+  | "file.copyTree"
+  | "ui.refresh"
+  | "ui.escape"
+  | "git.toggle"
+  | "worktree.next"
+  | "worktree.panel"
+  | "app.quit"
+  | "app.forceQuit";
 
-export type KeymapPreset = 'standard' | 'vim';
+export type KeymapPreset = "standard" | "vim";
 
 export interface KeyMapConfig {
   preset?: KeymapPreset;
@@ -227,10 +227,10 @@ export interface DevServerConfig {
 }
 
 export interface UIConfig {
-  leftClickAction?: 'open' | 'select';
+  leftClickAction?: "open" | "select";
   compactMode?: boolean;
   activePathHighlight?: boolean;
-  activePathColor?: 'cyan' | 'blue' | 'green';
+  activePathColor?: "cyan" | "blue" | "green";
 }
 
 export interface WorktreesConfig {
@@ -239,15 +239,15 @@ export interface WorktreesConfig {
 }
 
 export interface GitDisplayConfig {
-  statusStyle?: 'letter' | 'glyph';
+  statusStyle?: "letter" | "glyph";
   folderHeatMap?: boolean;
-  heatMapIntensity?: 'subtle' | 'normal' | 'intense';
+  heatMapIntensity?: "subtle" | "normal" | "intense";
 }
 
 export interface CanopyConfig {
   editor: string;
   editorArgs: string[];
-  theme: 'auto' | 'dark' | 'light';
+  theme: "auto" | "dark" | "light";
   customTheme?: string;
   showHidden: boolean;
   showGitStatus: boolean;
@@ -265,8 +265,8 @@ export interface CanopyConfig {
   usePolling: boolean;
   treeIndent: number;
   maxDepth: number | null;
-  sortBy: 'name' | 'size' | 'modified' | 'type';
-  sortDirection: 'asc' | 'desc';
+  sortBy: "name" | "size" | "modified" | "type";
+  sortDirection: "asc" | "desc";
   ui?: UIConfig;
   worktrees?: WorktreesConfig;
   git?: GitDisplayConfig;

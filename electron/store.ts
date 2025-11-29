@@ -1,5 +1,5 @@
-import Store from 'electron-store';
-import type { RecentDirectory } from './ipc/types.js';
+import Store from "electron-store";
+import type { RecentDirectory } from "./ipc/types.js";
 
 export type { RecentDirectory };
 
@@ -18,7 +18,7 @@ export interface StoreSchema {
     recentDirectories?: RecentDirectory[];
     terminals: Array<{
       id: string;
-      type: 'shell' | 'claude' | 'gemini' | 'custom';
+      type: "shell" | "claude" | "gemini" | "custom";
       title: string;
       cwd: string;
       worktreeId?: string;

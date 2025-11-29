@@ -1,4 +1,4 @@
-import type { WorktreeChanges } from '../../types/index.js';
+import type { WorktreeChanges } from "../../types/index.js";
 
 /**
  * Generate AI summary for worktree changes

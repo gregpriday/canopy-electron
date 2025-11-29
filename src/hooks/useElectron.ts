@@ -5,7 +5,7 @@
  * Includes defensive checks for environments where the preload script may not be available.
  */
 
-import type { ElectronAPI } from '../types/electron'
+import type { ElectronAPI } from "../types/electron";
 
 /**
  * Get the Electron API
@@ -14,13 +14,13 @@ import type { ElectronAPI } from '../types/electron'
  * @throws Error if window.electron is not available
  */
 export function useElectron(): ElectronAPI {
-  if (typeof window === 'undefined' || !window.electron) {
+  if (typeof window === "undefined" || !window.electron) {
     throw new Error(
-      'Electron API is not available. Make sure the preload script is loaded correctly.'
-    )
+      "Electron API is not available. Make sure the preload script is loaded correctly."
+    );
   }
 
-  return window.electron
+  return window.electron;
 }
 
 /**
@@ -31,5 +31,5 @@ export function useElectron(): ElectronAPI {
  * @returns True if the Electron API is available
  */
 export function isElectronAvailable(): boolean {
-  return typeof window !== 'undefined' && !!window.electron
+  return typeof window !== "undefined" && !!window.electron;
 }

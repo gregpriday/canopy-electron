@@ -19,6 +19,7 @@ This document outlines the architecture, implementation phases, and dependencies
 ## Current State
 
 The app currently operates on a **single repository** model:
+
 - `appState.lastDirectory` stores the last opened directory
 - Terminals are persisted globally, not per-project
 - No concept of "projects" - everything is worktree-centric within one repo
@@ -31,14 +32,14 @@ The app currently operates on a **single repository** model:
 
 ```typescript
 interface Project {
-  id: string;                    // UUID or path hash
-  path: string;                  // Git repository root path
-  name: string;                  // User-editable display name
-  emoji: string;                 // User-editable emoji (default: 🌲)
-  aiGeneratedName?: string;      // AI-suggested name (from folder)
-  aiGeneratedEmoji?: string;     // AI-suggested emoji
-  lastOpened: number;            // Timestamp for sorting
-  color?: string;                // Theme color/gradient (optional)
+  id: string; // UUID or path hash
+  path: string; // Git repository root path
+  name: string; // User-editable display name
+  emoji: string; // User-editable emoji (default: 🌲)
+  aiGeneratedName?: string; // AI-suggested name (from folder)
+  aiGeneratedEmoji?: string; // AI-suggested emoji
+  lastOpened: number; // Timestamp for sorting
+  color?: string; // Theme color/gradient (optional)
 }
 
 interface ProjectState {
@@ -51,7 +52,7 @@ interface ProjectState {
 
 interface TerminalSnapshot {
   id: string;
-  type: 'shell' | 'claude' | 'gemini' | 'custom';
+  type: "shell" | "claude" | "gemini" | "custom";
   title: string;
   cwd: string;
   worktreeId?: string;
@@ -111,11 +112,11 @@ interface TerminalSnapshot {
 
 Three approaches for handling terminals during project switch:
 
-| Approach | Complexity | Pros | Cons |
-|----------|------------|------|------|
-| **Kill & Respawn** | Low | Simple, low memory | Loses running processes, scroll history |
-| **Hibernate** | High | Agents keep running | Memory grows, complex state |
-| **Hybrid** | Medium | User choice | UI complexity |
+| Approach           | Complexity | Pros                | Cons                                    |
+| ------------------ | ---------- | ------------------- | --------------------------------------- |
+| **Kill & Respawn** | Low        | Simple, low memory  | Loses running processes, scroll history |
+| **Hibernate**      | High       | Agents keep running | Memory grows, complex state             |
+| **Hybrid**         | Medium     | User choice         | UI complexity                           |
 
 **Recommendation:** Start with Kill & Respawn, add hibernation later if needed.
 
@@ -144,6 +145,7 @@ Three approaches for handling terminals during project switch:
 ```
 
 **Placement options:**
+
 - Sidebar header (click project name to open switcher)
 - Command palette (`Cmd+Shift+O`)
 - Dedicated project bar above main toolbar
@@ -183,6 +185,7 @@ class ProjectStore {
 ### ProjectIdentityService (Port from CLI)
 
 The original Canopy CLI generates project names and emojis using AI:
+
 - Source: `/Users/gpriday/Projects/CopyTree/canopy/src/services/ai/identity.ts`
 - Cache: `~/.config/canopy/identity-cache.json`
 
@@ -206,8 +209,8 @@ The WorktreeService needs reset capability:
 ```typescript
 class WorktreeService {
   // New methods for project switching
-  async reset(): Promise<void>;  // Stop all monitors, clear state
-  async initialize(rootPath: string): Promise<void>;  // Start fresh
+  async reset(): Promise<void>; // Stop all monitors, clear state
+  async initialize(rootPath: string): Promise<void>; // Start fresh
 }
 ```
 
@@ -234,6 +237,7 @@ project: {
 **Depends on:** Nothing (can start immediately)
 
 Implement the lightweight "recent directories" feature from Issue #50:
+
 - Add `recentDirectories` array to store schema
 - Add "File → Open Directory" menu item (Cmd+O)
 - Add "File → Open Recent" submenu
@@ -246,6 +250,7 @@ This provides the core directory-switching infrastructure.
 **Depends on:** Phase 1
 
 Upgrade from simple directories to full project model:
+
 - Create `Project` type definition
 - Create `ProjectStore` service
 - Migrate `recentDirectories` to `projects` array
@@ -256,6 +261,7 @@ Upgrade from simple directories to full project model:
 **Depends on:** Phase 2
 
 Build the visual project switching interface:
+
 - Create `ProjectSwitcher` component
 - Create `ProjectCard` component
 - Add to sidebar header or command palette
@@ -266,6 +272,7 @@ Build the visual project switching interface:
 **Depends on:** Phase 2, Phase 3
 
 Implement per-project state persistence:
+
 - Create `ProjectState` type
 - Add terminal snapshot/restore to `terminalStore`
 - Save state automatically when switching
@@ -276,6 +283,7 @@ Implement per-project state persistence:
 **Depends on:** Phase 2
 
 Add name and emoji customization:
+
 - Port `ProjectIdentityService` from CLI
 - Add project edit dialog
 - Add emoji picker component
@@ -286,6 +294,7 @@ Add name and emoji customization:
 **Depends on:** Phase 4
 
 Advanced feature for keeping terminals alive:
+
 - Keep PTY processes running when switching
 - Detach/reattach xterm.js instances
 - Add "Keep terminals running?" prompt
@@ -328,40 +337,40 @@ Advanced feature for keeping terminals alive:
 
 ## Files to Create
 
-| File | Purpose |
-|------|---------|
-| `electron/services/ProjectStore.ts` | Project CRUD and state management |
-| `electron/services/ProjectIdentityService.ts` | AI name/emoji generation |
-| `src/components/Project/ProjectSwitcher.tsx` | Project switching UI |
-| `src/components/Project/ProjectCard.tsx` | Individual project display |
-| `src/components/Project/ProjectEditDialog.tsx` | Edit name/emoji |
-| `src/hooks/useProjects.ts` | React hook for project state |
-| `src/store/projectStore.ts` | Zustand store for current project |
+| File                                           | Purpose                           |
+| ---------------------------------------------- | --------------------------------- |
+| `electron/services/ProjectStore.ts`            | Project CRUD and state management |
+| `electron/services/ProjectIdentityService.ts`  | AI name/emoji generation          |
+| `src/components/Project/ProjectSwitcher.tsx`   | Project switching UI              |
+| `src/components/Project/ProjectCard.tsx`       | Individual project display        |
+| `src/components/Project/ProjectEditDialog.tsx` | Edit name/emoji                   |
+| `src/hooks/useProjects.ts`                     | React hook for project state      |
+| `src/store/projectStore.ts`                    | Zustand store for current project |
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `electron/store.ts` | Add projects array, current project ID |
-| `electron/preload.ts` | Add project IPC bridge |
-| `electron/ipc/handlers.ts` | Add project handlers |
-| `electron/ipc/channels.ts` | Add project channels |
-| `electron/main.ts` | Add project menu items |
-| `electron/services/WorktreeService.ts` | Add reset/initialize methods |
-| `src/store/terminalStore.ts` | Add snapshot/restore methods |
-| `src/App.tsx` | Integrate project switching |
-| `src/components/Layout/Sidebar.tsx` | Add project header |
+| File                                   | Changes                                |
+| -------------------------------------- | -------------------------------------- |
+| `electron/store.ts`                    | Add projects array, current project ID |
+| `electron/preload.ts`                  | Add project IPC bridge                 |
+| `electron/ipc/handlers.ts`             | Add project handlers                   |
+| `electron/ipc/channels.ts`             | Add project channels                   |
+| `electron/main.ts`                     | Add project menu items                 |
+| `electron/services/WorktreeService.ts` | Add reset/initialize methods           |
+| `src/store/terminalStore.ts`           | Add snapshot/restore methods           |
+| `src/App.tsx`                          | Integrate project switching            |
+| `src/components/Layout/Sidebar.tsx`    | Add project header                     |
 
 ## Complexity Estimates
 
-| Component | Complexity | Effort |
-|-----------|------------|--------|
-| Phase 1: Foundation | Low | 1-2 days |
-| Phase 2: Project Model | Medium | 2-3 days |
-| Phase 3: Switcher UI | Medium | 2-3 days |
-| Phase 4: State Snapshotting | High | 3-5 days |
-| Phase 5: Project Identity | Medium | 2-3 days |
-| Phase 6: Hibernation | Very High | 5-7 days |
+| Component                   | Complexity | Effort   |
+| --------------------------- | ---------- | -------- |
+| Phase 1: Foundation         | Low        | 1-2 days |
+| Phase 2: Project Model      | Medium     | 2-3 days |
+| Phase 3: Switcher UI        | Medium     | 2-3 days |
+| Phase 4: State Snapshotting | High       | 3-5 days |
+| Phase 5: Project Identity   | Medium     | 2-3 days |
+| Phase 6: Hibernation        | Very High  | 5-7 days |
 
 **Total (without hibernation):** 10-16 days
 **Total (with hibernation):** 15-23 days
@@ -377,6 +386,7 @@ Advanced feature for keeping terminals alive:
 ### Original Canopy CLI Implementation
 
 The original CLI has relevant code for project identity:
+
 - Identity generation: `/Users/gpriday/Projects/CopyTree/canopy/src/services/ai/identity.ts`
 - Identity caching: `/Users/gpriday/Projects/CopyTree/canopy/src/services/ai/cache.ts`
 - Identity hook: `/Users/gpriday/Projects/CopyTree/canopy/src/hooks/useProjectIdentity.ts`

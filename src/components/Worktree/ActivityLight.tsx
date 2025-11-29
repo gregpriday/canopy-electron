@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getHeatColor } from '../../utils/colorInterpolation';
-import { cn } from '../../lib/utils';
+import { useState, useEffect } from "react";
+import { getHeatColor } from "../../utils/colorInterpolation";
+import { cn } from "../../lib/utils";
 
 interface ActivityLightProps {
   timestamp: number | null;
@@ -11,12 +11,12 @@ interface ActivityLightProps {
  * Returns an accessibility label based on the activity timestamp.
  */
 function getActivityLabel(timestamp: number | null): string {
-  if (timestamp == null) return 'idle';
+  if (timestamp == null) return "idle";
   const elapsed = Date.now() - timestamp;
-  if (elapsed < 5000) return 'very active';
-  if (elapsed < 30000) return 'active';
-  if (elapsed < 90000) return 'recent';
-  return 'idle';
+  if (elapsed < 5000) return "very active";
+  if (elapsed < 30000) return "active";
+  if (elapsed < 90000) return "recent";
+  return "idle";
 }
 
 /**
@@ -74,7 +74,7 @@ export function ActivityLight({ timestamp, className }: ActivityLightProps) {
 
       if (currentElapsed > 90000) {
         // Timestamp is now stale - set to gray and stop
-        setColor('#6B7280');
+        setColor("#6B7280");
         setIsPulsing(false);
         return true; // Signal to stop
       }
@@ -108,8 +108,8 @@ export function ActivityLight({ timestamp, className }: ActivityLightProps) {
   return (
     <span
       className={cn(
-        'inline-block w-3 h-3 rounded-full transition-colors duration-200',
-        isPulsing && 'animate-activity-pulse',
+        "inline-block w-3 h-3 rounded-full transition-colors duration-200",
+        isPulsing && "animate-activity-pulse",
         className
       )}
       style={{ backgroundColor: color }}

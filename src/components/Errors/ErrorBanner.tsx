@@ -8,40 +8,40 @@
  * - Dismiss button
  */
 
-import { useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
-import type { AppError, RetryAction } from '@/store/errorStore'
+import { useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
+import type { AppError, RetryAction } from "@/store/errorStore";
 
 export interface ErrorBannerProps {
   /** Error to display */
-  error: AppError
+  error: AppError;
   /** Called when user clicks dismiss */
-  onDismiss: (id: string) => void
+  onDismiss: (id: string) => void;
   /** Called when user clicks retry */
-  onRetry?: (id: string, action: RetryAction, args?: Record<string, unknown>) => void
+  onRetry?: (id: string, action: RetryAction, args?: Record<string, unknown>) => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
   /** Compact mode for inline display */
-  compact?: boolean
+  compact?: boolean;
 }
 
 const ERROR_TYPE_LABELS: Record<string, string> = {
-  git: 'Git Error',
-  process: 'Process Error',
-  filesystem: 'File System Error',
-  network: 'Network Error',
-  config: 'Configuration Error',
-  unknown: 'Error',
-}
+  git: "Git Error",
+  process: "Process Error",
+  filesystem: "File System Error",
+  network: "Network Error",
+  config: "Configuration Error",
+  unknown: "Error",
+};
 
 const ERROR_TYPE_ICONS: Record<string, string> = {
-  git: '📂',
-  process: '⚙️',
-  filesystem: '📁',
-  network: '🌐',
-  config: '⚠️',
-  unknown: '❌',
-}
+  git: "📂",
+  process: "⚙️",
+  filesystem: "📁",
+  network: "🌐",
+  config: "⚠️",
+  unknown: "❌",
+};
 
 export function ErrorBanner({
   error,
@@ -50,37 +50,37 @@ export function ErrorBanner({
   className,
   compact = false,
 }: ErrorBannerProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isRetrying, setIsRetrying] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const handleRetry = useCallback(async () => {
-    if (!error.retryAction || !onRetry) return
+    if (!error.retryAction || !onRetry) return;
 
-    setIsRetrying(true)
+    setIsRetrying(true);
     try {
-      await onRetry(error.id, error.retryAction, error.retryArgs)
+      await onRetry(error.id, error.retryAction, error.retryArgs);
     } finally {
-      setIsRetrying(false)
+      setIsRetrying(false);
     }
-  }, [error.id, error.retryAction, error.retryArgs, onRetry])
+  }, [error.id, error.retryAction, error.retryArgs, onRetry]);
 
   const handleDismiss = useCallback(() => {
-    onDismiss(error.id)
-  }, [error.id, onDismiss])
+    onDismiss(error.id);
+  }, [error.id, onDismiss]);
 
   const toggleExpanded = useCallback(() => {
-    setIsExpanded((prev) => !prev)
-  }, [])
+    setIsExpanded((prev) => !prev);
+  }, []);
 
-  const typeLabel = ERROR_TYPE_LABELS[error.type] || 'Error'
-  const typeIcon = ERROR_TYPE_ICONS[error.type] || '❌'
-  const canRetry = error.isTransient && error.retryAction && onRetry
+  const typeLabel = ERROR_TYPE_LABELS[error.type] || "Error";
+  const typeIcon = ERROR_TYPE_ICONS[error.type] || "❌";
+  const canRetry = error.isTransient && error.retryAction && onRetry;
 
   if (compact) {
     return (
       <div
         className={cn(
-          'flex items-center gap-2 px-2 py-1 text-xs bg-red-900/30 border border-red-700/50 rounded',
+          "flex items-center gap-2 px-2 py-1 text-xs bg-red-900/30 border border-red-700/50 rounded",
           className
         )}
       >
@@ -91,11 +91,11 @@ export function ErrorBanner({
             onClick={handleRetry}
             disabled={isRetrying}
             className={cn(
-              'px-1.5 py-0.5 text-xs text-red-300 hover:text-red-200 border border-red-600 rounded',
-              isRetrying && 'opacity-50 cursor-not-allowed'
+              "px-1.5 py-0.5 text-xs text-red-300 hover:text-red-200 border border-red-600 rounded",
+              isRetrying && "opacity-50 cursor-not-allowed"
             )}
           >
-            {isRetrying ? '...' : 'Retry'}
+            {isRetrying ? "..." : "Retry"}
           </button>
         )}
         <button
@@ -106,15 +106,12 @@ export function ErrorBanner({
           ×
         </button>
       </div>
-    )
+    );
   }
 
   return (
     <div
-      className={cn(
-        'border border-red-700/50 bg-red-900/20 rounded-lg overflow-hidden',
-        className
-      )}
+      className={cn("border border-red-700/50 bg-red-900/20 rounded-lg overflow-hidden", className)}
       role="alert"
     >
       {/* Header */}
@@ -123,9 +120,7 @@ export function ErrorBanner({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-xs text-red-400 font-medium">{typeLabel}</span>
-            {error.source && (
-              <span className="text-xs text-red-500">• {error.source}</span>
-            )}
+            {error.source && <span className="text-xs text-red-500">• {error.source}</span>}
           </div>
           <p className="text-sm text-red-200 truncate">{error.message}</p>
         </div>
@@ -135,7 +130,7 @@ export function ErrorBanner({
               onClick={toggleExpanded}
               className="px-2 py-1 text-xs text-red-300 hover:text-red-200 hover:bg-red-800/50 rounded"
             >
-              {isExpanded ? 'Hide' : 'Details'}
+              {isExpanded ? "Hide" : "Details"}
             </button>
           )}
           {canRetry && (
@@ -143,11 +138,11 @@ export function ErrorBanner({
               onClick={handleRetry}
               disabled={isRetrying}
               className={cn(
-                'px-2 py-1 text-xs text-green-300 hover:text-green-200 border border-green-600 hover:bg-green-800/50 rounded',
-                isRetrying && 'opacity-50 cursor-not-allowed'
+                "px-2 py-1 text-xs text-green-300 hover:text-green-200 border border-green-600 hover:bg-green-800/50 rounded",
+                isRetrying && "opacity-50 cursor-not-allowed"
               )}
             >
-              {isRetrying ? 'Retrying...' : 'Retry'}
+              {isRetrying ? "Retrying..." : "Retry"}
             </button>
           )}
           <button
@@ -169,7 +164,7 @@ export function ErrorBanner({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default ErrorBanner
+export default ErrorBanner;

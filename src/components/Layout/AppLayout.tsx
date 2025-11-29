@@ -1,24 +1,24 @@
-import { useState, useCallback, useEffect, type ReactNode } from 'react'
-import { Toolbar } from './Toolbar'
-import { Sidebar } from './Sidebar'
-import { LogsPanel } from '../Logs'
-import { EventInspectorPanel } from '../EventInspector'
+import { useState, useCallback, useEffect, type ReactNode } from "react";
+import { Toolbar } from "./Toolbar";
+import { Sidebar } from "./Sidebar";
+import { LogsPanel } from "../Logs";
+import { EventInspectorPanel } from "../EventInspector";
 
 interface AppLayoutProps {
-  children?: ReactNode
-  sidebarContent?: ReactNode
-  onLaunchAgent?: (type: 'claude' | 'gemini' | 'shell') => void
-  onRefresh?: () => void
-  onSettings?: () => void
+  children?: ReactNode;
+  sidebarContent?: ReactNode;
+  onLaunchAgent?: (type: "claude" | "gemini" | "shell") => void;
+  onRefresh?: () => void;
+  onSettings?: () => void;
   /** Number of active errors to show in toolbar */
-  errorCount?: number
+  errorCount?: number;
   /** Called when user clicks the problems button */
-  onToggleProblems?: () => void
+  onToggleProblems?: () => void;
 }
 
-const MIN_SIDEBAR_WIDTH = 200
-const MAX_SIDEBAR_WIDTH = 600
-const DEFAULT_SIDEBAR_WIDTH = 350
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 600;
+const DEFAULT_SIDEBAR_WIDTH = 350;
 
 export function AppLayout({
   children,
@@ -29,56 +29,62 @@ export function AppLayout({
   errorCount,
   onToggleProblems,
 }: AppLayoutProps) {
-  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
 
   // Restore sidebar width from persisted state
   useEffect(() => {
     const restoreSidebarWidth = async () => {
       try {
-        const appState = await window.electron.app.getState()
+        const appState = await window.electron.app.getState();
         if (appState.sidebarWidth != null) {
           // Clamp to valid range
-          const clampedWidth = Math.min(Math.max(appState.sidebarWidth, MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH)
-          setSidebarWidth(clampedWidth)
+          const clampedWidth = Math.min(
+            Math.max(appState.sidebarWidth, MIN_SIDEBAR_WIDTH),
+            MAX_SIDEBAR_WIDTH
+          );
+          setSidebarWidth(clampedWidth);
         }
       } catch (error) {
-        console.error('Failed to restore sidebar width:', error)
+        console.error("Failed to restore sidebar width:", error);
       }
-    }
-    restoreSidebarWidth()
-  }, [])
+    };
+    restoreSidebarWidth();
+  }, []);
 
   // Persist sidebar width changes (debounced via the resize handler)
   useEffect(() => {
     const persistSidebarWidth = async () => {
       try {
-        await window.electron.app.setState({ sidebarWidth })
+        await window.electron.app.setState({ sidebarWidth });
       } catch (error) {
-        console.error('Failed to persist sidebar width:', error)
+        console.error("Failed to persist sidebar width:", error);
       }
-    }
+    };
 
     // Only persist after initial mount (to avoid overwriting on restore)
-    const timer = setTimeout(persistSidebarWidth, 300)
-    return () => clearTimeout(timer)
-  }, [sidebarWidth])
+    const timer = setTimeout(persistSidebarWidth, 300);
+    return () => clearTimeout(timer);
+  }, [sidebarWidth]);
 
   const handleSidebarResize = useCallback((newWidth: number) => {
-    const clampedWidth = Math.min(Math.max(newWidth, MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH)
-    setSidebarWidth(clampedWidth)
-  }, [])
+    const clampedWidth = Math.min(Math.max(newWidth, MIN_SIDEBAR_WIDTH), MAX_SIDEBAR_WIDTH);
+    setSidebarWidth(clampedWidth);
+  }, []);
 
-  const handleLaunchAgent = useCallback((type: 'claude' | 'gemini' | 'shell') => {
-    onLaunchAgent?.(type)
-  }, [onLaunchAgent])
+  const handleLaunchAgent = useCallback(
+    (type: "claude" | "gemini" | "shell") => {
+      onLaunchAgent?.(type);
+    },
+    [onLaunchAgent]
+  );
 
   const handleRefresh = useCallback(() => {
-    onRefresh?.()
-  }, [onRefresh])
+    onRefresh?.();
+  }, [onRefresh]);
 
   const handleSettings = useCallback(() => {
-    onSettings?.()
-  }, [onSettings])
+    onSettings?.();
+  }, [onSettings]);
 
   return (
     <div className="h-screen flex flex-col bg-canopy-bg">
@@ -94,13 +100,11 @@ export function AppLayout({
           <Sidebar width={sidebarWidth} onResize={handleSidebarResize}>
             {sidebarContent}
           </Sidebar>
-          <main className="flex-1 overflow-hidden bg-canopy-bg">
-            {children}
-          </main>
+          <main className="flex-1 overflow-hidden bg-canopy-bg">{children}</main>
         </div>
         <LogsPanel />
         <EventInspectorPanel />
       </div>
     </div>
-  )
+  );
 }

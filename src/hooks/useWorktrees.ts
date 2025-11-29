@@ -11,24 +11,24 @@
  * Migrated from: /Users/gpriday/Projects/CopyTree/canopy/src/hooks/useWorktreeMonitor.ts
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { WorktreeState } from '../types'
+import { useState, useEffect, useCallback, useMemo } from "react";
+import type { WorktreeState } from "../types";
 
 export interface UseWorktreesReturn {
   /** Array of worktrees, sorted with main/master first, then alphabetically */
-  worktrees: WorktreeState[]
+  worktrees: WorktreeState[];
   /** Map of worktree ID to state for quick lookups */
-  worktreeMap: Map<string, WorktreeState>
+  worktreeMap: Map<string, WorktreeState>;
   /** Currently active worktree ID */
-  activeId: string | null
+  activeId: string | null;
   /** Whether initial load is in progress */
-  isLoading: boolean
+  isLoading: boolean;
   /** Error message if initial load failed */
-  error: string | null
+  error: string | null;
   /** Trigger a manual refresh of all worktrees */
-  refresh: () => Promise<void>
+  refresh: () => Promise<void>;
   /** Set the active worktree by ID */
-  setActive: (id: string) => void
+  setActive: (id: string) => void;
 }
 
 /**
@@ -53,121 +53,121 @@ export interface UseWorktreesReturn {
  * ```
  */
 export function useWorktrees(): UseWorktreesReturn {
-  const [worktreeMap, setWorktreeMap] = useState<Map<string, WorktreeState>>(new Map())
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [worktreeMap, setWorktreeMap] = useState<Map<string, WorktreeState>>(new Map());
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Initial load of worktrees
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadWorktrees() {
       try {
-        setIsLoading(true)
-        setError(null)
-        const states = await window.electron.worktree.getAll()
+        setIsLoading(true);
+        setError(null);
+        const states = await window.electron.worktree.getAll();
         if (!cancelled) {
-          const map = new Map(states.map(s => [s.id, s]))
-          setWorktreeMap(map)
+          const map = new Map(states.map((s) => [s.id, s]));
+          setWorktreeMap(map);
 
           // Set initial active to first worktree if none selected
           if (states.length > 0 && activeId === null) {
             // Prefer the current worktree (based on cwd), then main/master, then first
-            const currentWorktree = states.find(s => s.isCurrent)
-            const mainWorktree = states.find(s => s.branch === 'main' || s.branch === 'master')
-            const initialActive = currentWorktree?.id ?? mainWorktree?.id ?? states[0].id
-            setActiveId(initialActive)
+            const currentWorktree = states.find((s) => s.isCurrent);
+            const mainWorktree = states.find((s) => s.branch === "main" || s.branch === "master");
+            const initialActive = currentWorktree?.id ?? mainWorktree?.id ?? states[0].id;
+            setActiveId(initialActive);
 
             // Notify main process of initial active selection so polling priorities are synced
             window.electron.worktree.setActive(initialActive).catch(() => {
               // Silently fail - this is non-critical
-            })
+            });
           }
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load worktrees')
+          setError(e instanceof Error ? e.message : "Failed to load worktrees");
         }
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    loadWorktrees()
+    loadWorktrees();
 
     return () => {
-      cancelled = true
-    }
-  }, []) // Only run on mount
+      cancelled = true;
+    };
+  }, []); // Only run on mount
 
   // Subscribe to worktree updates from main process
   useEffect(() => {
     const unsubUpdate = window.electron.worktree.onUpdate((state) => {
-      setWorktreeMap(prev => {
-        const next = new Map(prev)
-        next.set(state.id, state)
-        return next
-      })
-    })
+      setWorktreeMap((prev) => {
+        const next = new Map(prev);
+        next.set(state.id, state);
+        return next;
+      });
+    });
 
     const unsubRemove = window.electron.worktree.onRemove(({ worktreeId }) => {
-      setWorktreeMap(prev => {
-        const next = new Map(prev)
-        next.delete(worktreeId)
-        return next
-      })
+      setWorktreeMap((prev) => {
+        const next = new Map(prev);
+        next.delete(worktreeId);
+        return next;
+      });
 
       // If the removed worktree was active, clear active selection
-      setActiveId(current => {
+      setActiveId((current) => {
         if (current === worktreeId) {
-          return null
+          return null;
         }
-        return current
-      })
-    })
+        return current;
+      });
+    });
 
     return () => {
-      unsubUpdate()
-      unsubRemove()
-    }
-  }, [])
+      unsubUpdate();
+      unsubRemove();
+    };
+  }, []);
 
   // Trigger refresh of worktrees from main process
   const refresh = useCallback(async () => {
     try {
-      setError(null)
-      await window.electron.worktree.refresh()
+      setError(null);
+      await window.electron.worktree.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to refresh worktrees')
+      setError(e instanceof Error ? e.message : "Failed to refresh worktrees");
     }
-  }, [])
+  }, []);
 
   // Set active worktree (notifies main process)
   const setActive = useCallback((id: string) => {
-    setActiveId(id)
+    setActiveId(id);
     // Notify main process so it can adjust polling priorities
     window.electron.worktree.setActive(id).catch(() => {
       // Silently fail - this is non-critical
-    })
-  }, [])
+    });
+  }, []);
 
   // Convert map to sorted array for rendering
   const worktrees = useMemo(() => {
     return Array.from(worktreeMap.values()).sort((a, b) => {
       // Main/master branches always come first
-      const aIsMain = a.branch === 'main' || a.branch === 'master'
-      const bIsMain = b.branch === 'main' || b.branch === 'master'
+      const aIsMain = a.branch === "main" || a.branch === "master";
+      const bIsMain = b.branch === "main" || b.branch === "master";
       if (aIsMain !== bIsMain) {
-        return aIsMain ? -1 : 1
+        return aIsMain ? -1 : 1;
       }
 
       // Then sort by name alphabetically
-      return a.name.localeCompare(b.name)
-    })
-  }, [worktreeMap])
+      return a.name.localeCompare(b.name);
+    });
+  }, [worktreeMap]);
 
   return {
     worktrees,
@@ -177,7 +177,7 @@ export function useWorktrees(): UseWorktreesReturn {
     error,
     refresh,
     setActive,
-  }
+  };
 }
 
 /**
@@ -200,49 +200,50 @@ export function useWorktrees(): UseWorktreesReturn {
  * ```
  */
 export function useWorktree(worktreeId: string): WorktreeState | null {
-  const [worktree, setWorktree] = useState<WorktreeState | null>(null)
+  const [worktree, setWorktree] = useState<WorktreeState | null>(null);
 
   // Get initial state
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
-    window.electron.worktree.getAll()
-      .then(states => {
+    window.electron.worktree
+      .getAll()
+      .then((states) => {
         if (!cancelled) {
-          const found = states.find(s => s.id === worktreeId)
-          setWorktree(found ?? null)
+          const found = states.find((s) => s.id === worktreeId);
+          setWorktree(found ?? null);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setWorktree(null)
+          setWorktree(null);
         }
-      })
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [worktreeId])
+      cancelled = true;
+    };
+  }, [worktreeId]);
 
   // Subscribe to updates for this specific worktree
   useEffect(() => {
     const unsubUpdate = window.electron.worktree.onUpdate((state) => {
       if (state.id === worktreeId) {
-        setWorktree(state)
+        setWorktree(state);
       }
-    })
+    });
 
     const unsubRemove = window.electron.worktree.onRemove(({ worktreeId: removedId }) => {
       if (removedId === worktreeId) {
-        setWorktree(null)
+        setWorktree(null);
       }
-    })
+    });
 
     return () => {
-      unsubUpdate()
-      unsubRemove()
-    }
-  }, [worktreeId])
+      unsubUpdate();
+      unsubRemove();
+    };
+  }, [worktreeId]);
 
-  return worktree
+  return worktree;
 }

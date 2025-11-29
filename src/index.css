@@ -134,7 +134,9 @@
   }
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -142,7 +144,8 @@ html, body, #root {
 
 /* Activity light pulse animation for very recent activity */
 @keyframes activity-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }

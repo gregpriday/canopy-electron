@@ -5,50 +5,50 @@
  * Handles spawning, input/output, resize, and cleanup of PTY processes.
  */
 
-import * as pty from 'node-pty'
-import { EventEmitter } from 'events'
-import { existsSync } from 'fs'
-import { events } from './events.js'
+import * as pty from "node-pty";
+import { EventEmitter } from "events";
+import { existsSync } from "fs";
+import { events } from "./events.js";
 
 export interface PtySpawnOptions {
-  cwd: string
-  shell?: string           // Default: user's default shell
-  args?: string[]          // Shell arguments (e.g., ['-l'] for login shell)
-  env?: Record<string, string>
-  cols: number
-  rows: number
-  type?: 'shell' | 'claude' | 'gemini' | 'custom'
-  title?: string
-  worktreeId?: string
+  cwd: string;
+  shell?: string; // Default: user's default shell
+  args?: string[]; // Shell arguments (e.g., ['-l'] for login shell)
+  env?: Record<string, string>;
+  cols: number;
+  rows: number;
+  type?: "shell" | "claude" | "gemini" | "custom";
+  title?: string;
+  worktreeId?: string;
 }
 
 interface TerminalInfo {
-  id: string
-  ptyProcess: pty.IPty
-  cwd: string
-  shell: string
-  type?: 'shell' | 'claude' | 'gemini' | 'custom'
-  title?: string
-  worktreeId?: string
+  id: string;
+  ptyProcess: pty.IPty;
+  cwd: string;
+  shell: string;
+  type?: "shell" | "claude" | "gemini" | "custom";
+  title?: string;
+  worktreeId?: string;
   /** For agent terminals, the agent ID (same as terminal ID for now) */
-  agentId?: string
+  agentId?: string;
   /** Timestamp when the terminal was spawned (for duration calculations) */
-  spawnedAt: number
+  spawnedAt: number;
   /** Flag indicating this terminal was explicitly killed (not a natural exit) */
-  wasKilled?: boolean
+  wasKilled?: boolean;
 }
 
 export interface PtyManagerEvents {
-  data: (id: string, data: string) => void
-  exit: (id: string, exitCode: number) => void
-  error: (id: string, error: string) => void
+  data: (id: string, data: string) => void;
+  exit: (id: string, exitCode: number) => void;
+  error: (id: string, error: string) => void;
 }
 
 export class PtyManager extends EventEmitter {
-  private terminals: Map<string, TerminalInfo> = new Map()
+  private terminals: Map<string, TerminalInfo> = new Map();
 
   constructor() {
-    super()
+    super();
   }
 
   /**
@@ -60,65 +60,65 @@ export class PtyManager extends EventEmitter {
   spawn(id: string, options: PtySpawnOptions): void {
     // Check if terminal with this ID already exists
     if (this.terminals.has(id)) {
-      console.warn(`Terminal with id ${id} already exists, killing existing instance`)
-      this.kill(id)
+      console.warn(`Terminal with id ${id} already exists, killing existing instance`);
+      this.kill(id);
     }
 
-    const shell = options.shell || this.getDefaultShell()
-    const args = options.args || this.getDefaultShellArgs(shell)
+    const shell = options.shell || this.getDefaultShell();
+    const args = options.args || this.getDefaultShellArgs(shell);
 
-    let ptyProcess: pty.IPty
+    let ptyProcess: pty.IPty;
 
     try {
       ptyProcess = pty.spawn(shell, args, {
-        name: 'xterm-256color',
+        name: "xterm-256color",
         cols: options.cols,
         rows: options.rows,
         cwd: options.cwd,
         env: { ...process.env, ...options.env } as Record<string, string>,
-      })
+      });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`Failed to spawn terminal ${id}:`, errorMessage)
-      this.emit('error', id, errorMessage)
-      throw new Error(`Failed to spawn terminal: ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Failed to spawn terminal ${id}:`, errorMessage);
+      this.emit("error", id, errorMessage);
+      throw new Error(`Failed to spawn terminal: ${errorMessage}`);
     }
 
     // Forward PTY data events
     ptyProcess.onData((data) => {
-      this.emit('data', id, data)
-    })
+      this.emit("data", id, data);
+    });
 
-    const spawnedAt = Date.now()
-    const isAgentTerminal = options.type === 'claude' || options.type === 'gemini'
+    const spawnedAt = Date.now();
+    const isAgentTerminal = options.type === "claude" || options.type === "gemini";
     // For agent terminals, use terminal ID as agent ID
-    const agentId = isAgentTerminal ? id : undefined
+    const agentId = isAgentTerminal ? id : undefined;
 
     // Handle PTY exit
     ptyProcess.onExit(({ exitCode }) => {
       // Verify this is still the active terminal (prevent race with respawn)
-      const terminal = this.terminals.get(id)
+      const terminal = this.terminals.get(id);
       if (!terminal || terminal.ptyProcess !== ptyProcess) {
         // This is a stale exit event from a previous terminal with same ID
-        return
+        return;
       }
 
-      this.emit('exit', id, exitCode ?? 0)
+      this.emit("exit", id, exitCode ?? 0);
 
       // Emit agent:completed event for agent terminals (but not if explicitly killed)
       if (isAgentTerminal && agentId && !terminal.wasKilled) {
-        const completedAt = Date.now()
-        const duration = completedAt - spawnedAt
-        events.emit('agent:completed', {
+        const completedAt = Date.now();
+        const duration = completedAt - spawnedAt;
+        events.emit("agent:completed", {
           agentId,
           exitCode: exitCode ?? 0,
           duration,
           timestamp: completedAt,
-        })
+        });
       }
 
-      this.terminals.delete(id)
-    })
+      this.terminals.delete(id);
+    });
 
     this.terminals.set(id, {
       id,
@@ -130,17 +130,17 @@ export class PtyManager extends EventEmitter {
       worktreeId: options.worktreeId,
       agentId,
       spawnedAt,
-    })
+    });
 
     // Emit agent:spawned event for agent terminals (Claude, Gemini)
     if (isAgentTerminal && agentId && options.type) {
-      events.emit('agent:spawned', {
+      events.emit("agent:spawned", {
         agentId,
         terminalId: id,
         type: options.type,
         worktreeId: options.worktreeId,
         timestamp: spawnedAt,
-      })
+      });
     }
   }
 
@@ -150,11 +150,11 @@ export class PtyManager extends EventEmitter {
    * @param data - Data to write
    */
   write(id: string, data: string): void {
-    const terminal = this.terminals.get(id)
+    const terminal = this.terminals.get(id);
     if (terminal) {
-      terminal.ptyProcess.write(data)
+      terminal.ptyProcess.write(data);
     } else {
-      console.warn(`Terminal ${id} not found, cannot write data`)
+      console.warn(`Terminal ${id} not found, cannot write data`);
     }
   }
 
@@ -165,11 +165,11 @@ export class PtyManager extends EventEmitter {
    * @param rows - New row count
    */
   resize(id: string, cols: number, rows: number): void {
-    const terminal = this.terminals.get(id)
+    const terminal = this.terminals.get(id);
     if (terminal) {
-      terminal.ptyProcess.resize(cols, rows)
+      terminal.ptyProcess.resize(cols, rows);
     } else {
-      console.warn(`Terminal ${id} not found, cannot resize`)
+      console.warn(`Terminal ${id} not found, cannot resize`);
     }
   }
 
@@ -179,20 +179,20 @@ export class PtyManager extends EventEmitter {
    * @param reason - Optional reason for killing (for agent events)
    */
   kill(id: string, reason?: string): void {
-    const terminal = this.terminals.get(id)
+    const terminal = this.terminals.get(id);
     if (terminal) {
       // Mark as killed to prevent agent:completed emission
-      terminal.wasKilled = true
+      terminal.wasKilled = true;
 
       // Emit agent:killed event for agent terminals before killing
       if (terminal.agentId) {
-        events.emit('agent:killed', {
+        events.emit("agent:killed", {
           agentId: terminal.agentId,
           reason,
           timestamp: Date.now(),
-        })
+        });
       }
-      terminal.ptyProcess.kill()
+      terminal.ptyProcess.kill();
       // Don't delete here - let the exit handler do it to avoid race conditions
     }
   }
@@ -203,7 +203,7 @@ export class PtyManager extends EventEmitter {
    * @returns Terminal info or undefined if not found
    */
   getTerminal(id: string): TerminalInfo | undefined {
-    return this.terminals.get(id)
+    return this.terminals.get(id);
   }
 
   /**
@@ -211,7 +211,7 @@ export class PtyManager extends EventEmitter {
    * @returns Array of terminal IDs
    */
   getActiveTerminalIds(): string[] {
-    return Array.from(this.terminals.keys())
+    return Array.from(this.terminals.keys());
   }
 
   /**
@@ -219,7 +219,7 @@ export class PtyManager extends EventEmitter {
    * @returns Array of terminal info objects
    */
   getAll(): TerminalInfo[] {
-    return Array.from(this.terminals.values())
+    return Array.from(this.terminals.values());
   }
 
   /**
@@ -228,7 +228,7 @@ export class PtyManager extends EventEmitter {
    * @returns True if terminal exists
    */
   hasTerminal(id: string): boolean {
-    return this.terminals.has(id)
+    return this.terminals.has(id);
   }
 
   /**
@@ -239,20 +239,20 @@ export class PtyManager extends EventEmitter {
       try {
         // Emit agent:killed event for agent terminals during shutdown
         if (terminal.agentId) {
-          events.emit('agent:killed', {
+          events.emit("agent:killed", {
             agentId: terminal.agentId,
-            reason: 'cleanup',
+            reason: "cleanup",
             timestamp: Date.now(),
-          })
+          });
         }
-        terminal.ptyProcess.kill()
+        terminal.ptyProcess.kill();
       } catch (error) {
         // Ignore errors during cleanup - process may already be dead
-        console.warn(`Error killing terminal ${id}:`, error)
+        console.warn(`Error killing terminal ${id}:`, error);
       }
     }
-    this.terminals.clear()
-    this.removeAllListeners()
+    this.terminals.clear();
+    this.removeAllListeners();
   }
 
   /**
@@ -260,23 +260,23 @@ export class PtyManager extends EventEmitter {
    * Tries multiple fallbacks to ensure a valid shell is found
    */
   private getDefaultShell(): string {
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       // Prefer PowerShell, fall back to cmd.exe
-      return process.env.COMSPEC || 'powershell.exe'
+      return process.env.COMSPEC || "powershell.exe";
     }
 
     // On macOS/Linux, try SHELL env var first
     if (process.env.SHELL) {
-      return process.env.SHELL
+      return process.env.SHELL;
     }
 
     // Try common shells in order of preference
-    const commonShells = ['/bin/zsh', '/bin/bash', '/bin/sh']
+    const commonShells = ["/bin/zsh", "/bin/bash", "/bin/sh"];
 
     for (const shell of commonShells) {
       try {
         if (existsSync(shell)) {
-          return shell
+          return shell;
         }
       } catch {
         // Continue to next shell if check fails
@@ -284,7 +284,7 @@ export class PtyManager extends EventEmitter {
     }
 
     // Last resort: /bin/sh should exist on all Unix-like systems
-    return '/bin/sh'
+    return "/bin/sh";
   }
 
   /**
@@ -292,33 +292,33 @@ export class PtyManager extends EventEmitter {
    * @param shell - Shell path
    */
   private getDefaultShellArgs(shell: string): string[] {
-    const shellName = shell.toLowerCase()
+    const shellName = shell.toLowerCase();
 
     // For login shells on Unix-like systems
-    if (process.platform !== 'win32') {
-      if (shellName.includes('zsh') || shellName.includes('bash')) {
+    if (process.platform !== "win32") {
+      if (shellName.includes("zsh") || shellName.includes("bash")) {
         // Use login shell to load user's profile
-        return ['-l']
+        return ["-l"];
       }
     }
 
-    return []
+    return [];
   }
 }
 
 // Export singleton instance
-let ptyManagerInstance: PtyManager | null = null
+let ptyManagerInstance: PtyManager | null = null;
 
 export function getPtyManager(): PtyManager {
   if (!ptyManagerInstance) {
-    ptyManagerInstance = new PtyManager()
+    ptyManagerInstance = new PtyManager();
   }
-  return ptyManagerInstance
+  return ptyManagerInstance;
 }
 
 export function disposePtyManager(): void {
   if (ptyManagerInstance) {
-    ptyManagerInstance.dispose()
-    ptyManagerInstance = null
+    ptyManagerInstance.dispose();
+    ptyManagerInstance = null;
   }
 }

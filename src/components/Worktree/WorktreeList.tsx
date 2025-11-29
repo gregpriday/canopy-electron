@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { WorktreeState } from '../../types'
-import { WorktreeCard } from './WorktreeCard'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { WorktreeState } from "../../types";
+import { WorktreeCard } from "./WorktreeCard";
 
 export interface WorktreeListProps {
-  worktrees: WorktreeState[]
-  activeId: string | null
-  focusedId: string | null
-  onSelect: (id: string) => void
-  onCopyTree: (id: string) => void
-  onOpenEditor: (id: string) => void
-  onToggleServer: (id: string) => void
-  onOpenIssue?: (id: string, issueNumber: number) => void
-  onOpenPR?: (id: string, prUrl: string) => void
-  isLoading?: boolean
-  error?: string | null
-  onRetry?: () => void
+  worktrees: WorktreeState[];
+  activeId: string | null;
+  focusedId: string | null;
+  onSelect: (id: string) => void;
+  onCopyTree: (id: string) => void;
+  onOpenEditor: (id: string) => void;
+  onToggleServer: (id: string) => void;
+  onOpenIssue?: (id: string, issueNumber: number) => void;
+  onOpenPR?: (id: string, prUrl: string) => void;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 /**
@@ -40,193 +40,200 @@ export function WorktreeList({
   error = null,
   onRetry,
 }: WorktreeListProps) {
-  const listRef = useRef<HTMLDivElement>(null)
-  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-  const [internalFocusIndex, setInternalFocusIndex] = useState(0)
-  const [showScrollUp, setShowScrollUp] = useState(false)
-  const [showScrollDown, setShowScrollDown] = useState(false)
-  const [hasFocus, setHasFocus] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [internalFocusIndex, setInternalFocusIndex] = useState(0);
+  const [showScrollUp, setShowScrollUp] = useState(false);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [hasFocus, setHasFocus] = useState(false);
 
   // Sort worktrees with main/master pinned first, then by MRU (Most Recently Used)
   const sortedWorktrees = useMemo(() => {
     if (worktrees.length === 0) {
-      return []
+      return [];
     }
 
     // Find main/master to pin at top
-    const mainIndex = worktrees.findIndex(
-      (wt) => wt.branch === 'main' || wt.branch === 'master'
-    )
+    const mainIndex = worktrees.findIndex((wt) => wt.branch === "main" || wt.branch === "master");
 
     // Sort by recency (most recent first), then alphabetically as tie-breaker
     const sorted = [...worktrees].sort((a, b) => {
       // Primary sort: Most recent activity first
-      const timeA = a.lastActivityTimestamp ?? 0
-      const timeB = b.lastActivityTimestamp ?? 0
+      const timeA = a.lastActivityTimestamp ?? 0;
+      const timeB = b.lastActivityTimestamp ?? 0;
 
       if (timeA !== timeB) {
-        return timeB - timeA // Descending (newest first)
+        return timeB - timeA; // Descending (newest first)
       }
 
       // Fallback: Alphabetical by branch/name
-      const labelA = a.branch || a.name
-      const labelB = b.branch || b.name
-      return labelA.localeCompare(labelB)
-    })
+      const labelA = a.branch || a.name;
+      const labelB = b.branch || b.name;
+      return labelA.localeCompare(labelB);
+    });
 
     // Prepend main/master at the top
     if (mainIndex >= 0) {
-      const mainWorktree = worktrees[mainIndex]
-      const filtered = sorted.filter((wt) => wt.id !== mainWorktree.id)
-      return [mainWorktree, ...filtered]
+      const mainWorktree = worktrees[mainIndex];
+      const filtered = sorted.filter((wt) => wt.id !== mainWorktree.id);
+      return [mainWorktree, ...filtered];
     }
 
-    return sorted
-  }, [worktrees])
+    return sorted;
+  }, [worktrees]);
 
   // Compute focus index from external focusedId or internal state
   // Always clamp to valid bounds to handle list size changes
   const focusIndex = useMemo(() => {
-    if (sortedWorktrees.length === 0) return 0
+    if (sortedWorktrees.length === 0) return 0;
 
-    let idx: number
+    let idx: number;
     if (externalFocusedId) {
-      idx = sortedWorktrees.findIndex(w => w.id === externalFocusedId)
-      if (idx < 0) idx = internalFocusIndex
+      idx = sortedWorktrees.findIndex((w) => w.id === externalFocusedId);
+      if (idx < 0) idx = internalFocusIndex;
     } else {
-      idx = internalFocusIndex
+      idx = internalFocusIndex;
     }
 
     // Clamp to valid range [0, length - 1]
-    return Math.max(0, Math.min(idx, sortedWorktrees.length - 1))
-  }, [externalFocusedId, sortedWorktrees, internalFocusIndex])
+    return Math.max(0, Math.min(idx, sortedWorktrees.length - 1));
+  }, [externalFocusedId, sortedWorktrees, internalFocusIndex]);
 
   // Get current focused worktree
-  const focusedWorktree = sortedWorktrees[focusIndex]
+  const focusedWorktree = sortedWorktrees[focusIndex];
 
   // Scroll focused item into view
   useEffect(() => {
-    if (!focusedWorktree) return
-    const itemEl = itemRefs.current.get(focusedWorktree.id)
+    if (!focusedWorktree) return;
+    const itemEl = itemRefs.current.get(focusedWorktree.id);
     if (itemEl) {
-      itemEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      itemEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-  }, [focusIndex, focusedWorktree])
+  }, [focusIndex, focusedWorktree]);
 
   // Update scroll indicators on scroll
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-    setShowScrollUp(scrollTop > 10)
-    setShowScrollDown(scrollTop + clientHeight < scrollHeight - 10)
-  }, [])
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    setShowScrollUp(scrollTop > 10);
+    setShowScrollDown(scrollTop + clientHeight < scrollHeight - 10);
+  }, []);
 
   // Check initial scroll state
   useEffect(() => {
-    const el = listRef.current
-    if (!el) return
+    const el = listRef.current;
+    if (!el) return;
 
     const checkScroll = () => {
-      setShowScrollUp(el.scrollTop > 10)
-      setShowScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 10)
-    }
+      setShowScrollUp(el.scrollTop > 10);
+      setShowScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 10);
+    };
 
-    checkScroll()
+    checkScroll();
     // Also check after a short delay to handle initial render
-    const timeout = setTimeout(checkScroll, 100)
-    return () => clearTimeout(timeout)
-  }, [sortedWorktrees])
+    const timeout = setTimeout(checkScroll, 100);
+    return () => clearTimeout(timeout);
+  }, [sortedWorktrees]);
 
   // Keyboard navigation
   useEffect(() => {
-    if (!hasFocus) return
+    if (!hasFocus) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip if user is typing in an input or textarea
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
       // Skip if event originates from interactive elements (buttons, links)
       // This allows buttons inside cards to function properly
       if (
-        target.tagName === 'BUTTON' ||
-        target.tagName === 'A' ||
-        target.closest('button') ||
-        target.closest('a')
+        target.tagName === "BUTTON" ||
+        target.tagName === "A" ||
+        target.closest("button") ||
+        target.closest("a")
       ) {
-        return
+        return;
       }
 
       switch (e.key) {
-        case 'ArrowDown':
-        case 'j': // vim-style navigation
-          e.preventDefault()
-          setInternalFocusIndex(i => Math.min(i + 1, sortedWorktrees.length - 1))
-          break
-        case 'ArrowUp':
-        case 'k': // vim-style navigation
-          e.preventDefault()
-          setInternalFocusIndex(i => Math.max(i - 1, 0))
-          break
-        case 'Home':
-          e.preventDefault()
-          setInternalFocusIndex(0)
-          break
-        case 'End':
-          e.preventDefault()
-          setInternalFocusIndex(sortedWorktrees.length - 1)
-          break
-        case 'Enter':
-        case ' ':
+        case "ArrowDown":
+        case "j": // vim-style navigation
+          e.preventDefault();
+          setInternalFocusIndex((i) => Math.min(i + 1, sortedWorktrees.length - 1));
+          break;
+        case "ArrowUp":
+        case "k": // vim-style navigation
+          e.preventDefault();
+          setInternalFocusIndex((i) => Math.max(i - 1, 0));
+          break;
+        case "Home":
+          e.preventDefault();
+          setInternalFocusIndex(0);
+          break;
+        case "End":
+          e.preventDefault();
+          setInternalFocusIndex(sortedWorktrees.length - 1);
+          break;
+        case "Enter":
+        case " ":
           if (focusedWorktree) {
-            e.preventDefault()
-            onSelect(focusedWorktree.id)
+            e.preventDefault();
+            onSelect(focusedWorktree.id);
           }
-          break
-        case 'c':
+          break;
+        case "c":
           if (focusedWorktree) {
-            e.preventDefault()
-            onCopyTree(focusedWorktree.id)
+            e.preventDefault();
+            onCopyTree(focusedWorktree.id);
           }
-          break
-        case 'e':
+          break;
+        case "e":
           if (focusedWorktree) {
-            e.preventDefault()
-            onOpenEditor(focusedWorktree.id)
+            e.preventDefault();
+            onOpenEditor(focusedWorktree.id);
           }
-          break
-        case 's':
+          break;
+        case "s":
           if (focusedWorktree) {
-            e.preventDefault()
-            onToggleServer(focusedWorktree.id)
+            e.preventDefault();
+            onToggleServer(focusedWorktree.id);
           }
-          break
+          break;
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [hasFocus, focusIndex, sortedWorktrees, focusedWorktree, onSelect, onCopyTree, onOpenEditor, onToggleServer])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    hasFocus,
+    focusIndex,
+    sortedWorktrees,
+    focusedWorktree,
+    onSelect,
+    onCopyTree,
+    onOpenEditor,
+    onToggleServer,
+  ]);
 
   // Handle focus and blur on the list container
   const handleFocus = useCallback(() => {
-    setHasFocus(true)
-  }, [])
+    setHasFocus(true);
+  }, []);
 
   const handleBlur = useCallback((e: React.FocusEvent) => {
     // Only lose focus if the new focus target is outside this component
     if (!listRef.current?.contains(e.relatedTarget)) {
-      setHasFocus(false)
+      setHasFocus(false);
     }
-  }, [])
+  }, []);
 
   // Store ref for each item
   const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) {
-      itemRefs.current.set(id, el)
+      itemRefs.current.set(id, el);
     } else {
-      itemRefs.current.delete(id)
+      itemRefs.current.delete(id);
     }
-  }, [])
+  }, []);
 
   // Loading state
   if (isLoading) {
@@ -255,7 +262,7 @@ export function WorktreeList({
         </div>
         <span className="text-sm">Loading worktrees...</span>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -290,7 +297,7 @@ export function WorktreeList({
           </button>
         )}
       </div>
-    )
+    );
   }
 
   // Empty state
@@ -320,15 +327,11 @@ export function WorktreeList({
           Open a git repository with worktrees to get started
         </span>
       </div>
-    )
+    );
   }
 
   return (
-    <div
-      className="relative h-full"
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-    >
+    <div className="relative h-full" onFocus={handleFocus} onBlur={handleBlur}>
       {/* Scroll up indicator */}
       {showScrollUp && (
         <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-canopy-sidebar to-transparent pointer-events-none z-10 flex items-center justify-center">
@@ -350,7 +353,7 @@ export function WorktreeList({
             key={worktree.id}
             ref={(el) => setItemRef(worktree.id, el)}
             role="listitem"
-            aria-current={worktree.id === activeId ? 'true' : undefined}
+            aria-current={worktree.id === activeId ? "true" : undefined}
             id={worktree.id}
           >
             <WorktreeCard
@@ -361,12 +364,16 @@ export function WorktreeList({
               onCopyTree={() => onCopyTree(worktree.id)}
               onOpenEditor={() => onOpenEditor(worktree.id)}
               onToggleServer={() => onToggleServer(worktree.id)}
-              onOpenIssue={worktree.issueNumber && onOpenIssue
-                ? () => onOpenIssue(worktree.id, worktree.issueNumber!)
-                : undefined}
-              onOpenPR={worktree.prUrl && worktree.prNumber && onOpenPR
-                ? () => onOpenPR(worktree.id, worktree.prUrl!)
-                : undefined}
+              onOpenIssue={
+                worktree.issueNumber && onOpenIssue
+                  ? () => onOpenIssue(worktree.id, worktree.issueNumber!)
+                  : undefined
+              }
+              onOpenPR={
+                worktree.prUrl && worktree.prNumber && onOpenPR
+                  ? () => onOpenPR(worktree.id, worktree.prUrl!)
+                  : undefined
+              }
             />
           </div>
         ))}
@@ -379,5 +386,5 @@ export function WorktreeList({
         </div>
       )}
     </div>
-  )
+  );
 }

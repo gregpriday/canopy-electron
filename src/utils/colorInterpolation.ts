@@ -31,28 +31,28 @@ export function interpolateColor(startHex: string, endHex: string, factor: numbe
  * 30s - 90s: Dull Green -> Gray (Cooling down)
  */
 export function getHeatColor(lastActivity: number | undefined | null): string {
-  if (lastActivity == null) return '#808080'; // Default Gray
+  if (lastActivity == null) return "#808080"; // Default Gray
 
   const elapsed = Date.now() - lastActivity;
 
   // Phase 1: The "Flash" (0s to 5s)
   // From Neon Green (#4ADE80) to Solid Green (#22C55E)
   if (elapsed < 5000) {
-    return interpolateColor('#4ADE80', '#22C55E', elapsed / 5000);
+    return interpolateColor("#4ADE80", "#22C55E", elapsed / 5000);
   }
 
   // Phase 2: Active Working (5s to 30s)
   // From Solid Green (#22C55E) to Dull Olive (#859F3D)
   if (elapsed < 30000) {
-    return interpolateColor('#22C55E', '#859F3D', (elapsed - 5000) / 25000);
+    return interpolateColor("#22C55E", "#859F3D", (elapsed - 5000) / 25000);
   }
 
   // Phase 3: Cooling Down (30s to 90s)
   // From Dull Olive (#859F3D) to Idle Gray (#6B7280)
   if (elapsed < 90000) {
-    return interpolateColor('#859F3D', '#6B7280', (elapsed - 30000) / 60000);
+    return interpolateColor("#859F3D", "#6B7280", (elapsed - 30000) / 60000);
   }
 
   // Phase 4: Idle
-  return '#6B7280'; // Gray-500
+  return "#6B7280"; // Gray-500
 }

@@ -27,6 +27,7 @@ Canopy Command Center is an Electron-based mini IDE designed to serve as "Missio
 ### Background
 
 The original Canopy CLI is a terminal application built with Ink (React for CLI) that:
+
 - Monitors multiple Git worktrees in a repository
 - Tracks file changes and generates AI-powered summaries
 - Manages development servers per worktree
@@ -43,16 +44,16 @@ The original Canopy CLI is a terminal application built with Ink (React for CLI)
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | Electron |
-| Build | Vite (electron-vite) |
-| UI Framework | React 18 + TypeScript |
-| Styling | Tailwind CSS |
-| Terminal | xterm.js + node-pty |
-| State Management | Zustand (or React Context) |
-| Git Operations | simple-git |
-| Process Management | execa |
+| Layer              | Technology                 |
+| ------------------ | -------------------------- |
+| Runtime            | Electron                   |
+| Build              | Vite (electron-vite)       |
+| UI Framework       | React 18 + TypeScript      |
+| Styling            | Tailwind CSS               |
+| Terminal           | xterm.js + node-pty        |
+| State Management   | Zustand (or React Context) |
+| Git Operations     | simple-git                 |
+| Process Management | execa                      |
 
 ---
 
@@ -151,26 +152,26 @@ The original Canopy CLI is a terminal application built with Ink (React for CLI)
 
 ```typescript
 interface Worktree {
-  id: string;                    // Unique identifier (path hash)
-  path: string;                  // Absolute filesystem path
-  name: string;                  // Display name (folder name)
-  branch?: string;               // Current Git branch
-  isCurrent: boolean;            // Is this the active worktree?
-  summary?: string;              // AI-generated summary
-  modifiedCount?: number;        // Number of modified files
-  mood?: WorktreeMood;           // Visual indicator state
-  aiStatus?: AISummaryStatus;    // AI summary generation status
-  lastActivityTimestamp?: number;// Last file change timestamp
-  aiNote?: string;               // Contents of .git/canopy/note
-  aiNoteTimestamp?: number;      // When the note was last updated
-  issueNumber?: number;          // Associated GitHub issue
-  prNumber?: number;             // Associated pull request
-  prUrl?: string;                // PR URL
-  prState?: 'open' | 'merged' | 'closed';
+  id: string; // Unique identifier (path hash)
+  path: string; // Absolute filesystem path
+  name: string; // Display name (folder name)
+  branch?: string; // Current Git branch
+  isCurrent: boolean; // Is this the active worktree?
+  summary?: string; // AI-generated summary
+  modifiedCount?: number; // Number of modified files
+  mood?: WorktreeMood; // Visual indicator state
+  aiStatus?: AISummaryStatus; // AI summary generation status
+  lastActivityTimestamp?: number; // Last file change timestamp
+  aiNote?: string; // Contents of .git/canopy/note
+  aiNoteTimestamp?: number; // When the note was last updated
+  issueNumber?: number; // Associated GitHub issue
+  prNumber?: number; // Associated pull request
+  prUrl?: string; // PR URL
+  prState?: "open" | "merged" | "closed";
 }
 
-type WorktreeMood = 'active' | 'stable' | 'stale' | 'error';
-type AISummaryStatus = 'active' | 'loading' | 'disabled' | 'error';
+type WorktreeMood = "active" | "stable" | "stale" | "error";
+type AISummaryStatus = "active" | "loading" | "disabled" | "error";
 ```
 
 ### WorktreeState (Runtime Extension)
@@ -208,7 +209,7 @@ interface FileChangeDetail {
   mtime?: number;
 }
 
-type GitStatus = 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked';
+type GitStatus = "added" | "modified" | "deleted" | "renamed" | "copied" | "untracked";
 ```
 
 ### DevServerState
@@ -224,7 +225,7 @@ interface DevServerState {
   logs: string[];
 }
 
-type DevServerStatus = 'stopped' | 'starting' | 'running' | 'error';
+type DevServerStatus = "stopped" | "starting" | "running" | "error";
 ```
 
 ### Terminal Instance
@@ -232,8 +233,8 @@ type DevServerStatus = 'stopped' | 'starting' | 'running' | 'error';
 ```typescript
 interface TerminalInstance {
   id: string;
-  worktreeId?: string;          // Associated worktree (optional)
-  type: 'shell' | 'claude' | 'gemini' | 'custom';
+  worktreeId?: string; // Associated worktree (optional)
+  type: "shell" | "claude" | "gemini" | "custom";
   title: string;
   cwd: string;
   pid?: number;
@@ -251,18 +252,18 @@ interface CanopyConfig {
   editorArgs?: string[];
 
   // Theme
-  theme?: 'dark' | 'light';
+  theme?: "dark" | "light";
 
   // Monitoring
   monitor?: {
-    pollIntervalActive?: number;    // ms, default 1000
+    pollIntervalActive?: number; // ms, default 1000
     pollIntervalBackground?: number; // ms, default 5000
   };
 
   // AI Features
   ai?: {
     enabled?: boolean;
-    summaryDebounceMs?: number;     // default 2000
+    summaryDebounceMs?: number; // default 2000
   };
 
   // Dev Server
@@ -286,7 +287,7 @@ interface CanopyConfig {
 
   // Keymap
   keymap?: {
-    preset?: 'standard' | 'vim';
+    preset?: "standard" | "vim";
     overrides?: Record<string, string>;
   };
 }
@@ -302,45 +303,45 @@ The original Canopy uses a typed event bus. For Electron, these events must be m
 
 #### System Events (Main → Renderer)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `sys:worktree:update` | `WorktreeState` | Worktree state changed |
-| `sys:worktree:remove` | `{ worktreeId }` | Worktree was removed |
-| `sys:pr:detected` | `{ worktreeId, prNumber, prUrl, prState, issueNumber }` | PR detected for worktree |
-| `sys:pr:cleared` | `{ worktreeId }` | PR association cleared |
-| `sys:terminal:resize` | `{ width, height }` | Window resized |
+| Event                 | Payload                                                 | Description              |
+| --------------------- | ------------------------------------------------------- | ------------------------ |
+| `sys:worktree:update` | `WorktreeState`                                         | Worktree state changed   |
+| `sys:worktree:remove` | `{ worktreeId }`                                        | Worktree was removed     |
+| `sys:pr:detected`     | `{ worktreeId, prNumber, prUrl, prState, issueNumber }` | PR detected for worktree |
+| `sys:pr:cleared`      | `{ worktreeId }`                                        | PR association cleared   |
+| `sys:terminal:resize` | `{ width, height }`                                     | Window resized           |
 
 #### Server Events (Main → Renderer)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `server:update` | `DevServerState` | Dev server status changed |
-| `server:error` | `{ worktreeId, error }` | Dev server error |
+| Event           | Payload                 | Description               |
+| --------------- | ----------------------- | ------------------------- |
+| `server:update` | `DevServerState`        | Dev server status changed |
+| `server:error`  | `{ worktreeId, error }` | Dev server error          |
 
 #### File Events (Renderer → Main)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
+| Event            | Payload                                       | Description               |
+| ---------------- | --------------------------------------------- | ------------------------- |
 | `file:copy-tree` | `{ rootPath?, profile?, extraArgs?, files? }` | Generate CopyTree context |
-| `file:open` | `{ path }` | Open file in editor |
+| `file:open`      | `{ path }`                                    | Open file in editor       |
 
 #### UI Events (Renderer Only)
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `ui:notify` | `{ type, message, id? }` | Show notification |
-| `ui:modal:open` | `{ modalId, context }` | Open modal |
-| `ui:modal:close` | `{ modalId? }` | Close modal |
+| Event            | Payload                  | Description       |
+| ---------------- | ------------------------ | ----------------- |
+| `ui:notify`      | `{ type, message, id? }` | Show notification |
+| `ui:modal:open`  | `{ modalId, context }`   | Open modal        |
+| `ui:modal:close` | `{ modalId? }`           | Close modal       |
 
 #### Terminal Events (Bidirectional)
 
-| Event | Direction | Payload | Description |
-|-------|-----------|---------|-------------|
-| `terminal:spawn` | R→M | `{ id, cwd, shell?, cols, rows }` | Create terminal |
-| `terminal:data` | M→R | `{ id, data }` | Terminal output |
-| `terminal:input` | R→M | `{ id, data }` | Terminal input |
-| `terminal:resize` | R→M | `{ id, cols, rows }` | Resize terminal |
-| `terminal:kill` | R→M | `{ id }` | Kill terminal |
+| Event             | Direction | Payload                           | Description     |
+| ----------------- | --------- | --------------------------------- | --------------- |
+| `terminal:spawn`  | R→M       | `{ id, cwd, shell?, cols, rows }` | Create terminal |
+| `terminal:data`   | M→R       | `{ id, data }`                    | Terminal output |
+| `terminal:input`  | R→M       | `{ id, data }`                    | Terminal input  |
+| `terminal:resize` | R→M       | `{ id, cols, rows }`              | Resize terminal |
+| `terminal:kill`   | R→M       | `{ id }`                          | Kill terminal   |
 
 ### IPC Bridge Design
 
@@ -396,15 +397,17 @@ interface ElectronAPI {
 **Source:** Migrated from `src/services/monitor/WorktreeService.ts`
 
 Responsibilities:
+
 - Maintain a map of `WorktreeMonitor` instances
 - Sync monitors when worktrees are added/removed
 - Ensure `.git/canopy/note` files exist
 - Emit `sys:worktree:update` and `sys:worktree:remove` events via IPC
 
 Key Methods:
+
 ```typescript
 class WorktreeService {
-  sync(): Promise<void>;              // Refresh worktree list
+  sync(): Promise<void>; // Refresh worktree list
   getAllStates(): Map<string, WorktreeState>;
   setActiveWorktree(id: string): void;
   dispose(): void;
@@ -416,12 +419,14 @@ class WorktreeService {
 **Source:** Migrated from `src/services/monitor/WorktreeMonitor.ts`
 
 Responsibilities:
+
 - Poll a single worktree for changes via `simple-git`
 - Track file changes and calculate stats
 - Manage AI summary generation (debounced)
 - Emit state updates
 
 Key Features:
+
 - Hash-based change detection to avoid redundant updates
 - Configurable polling intervals (active vs background)
 - Integration with AI services for summaries
@@ -432,6 +437,7 @@ Key Features:
 **Source:** Migrated from `src/services/server/DevServerManager.ts`
 
 Responsibilities:
+
 - Spawn dev server processes via `execa`
 - Track process state per worktree
 - Parse stdout for URL/port detection
@@ -439,6 +445,7 @@ Responsibilities:
 - Stream logs with size limits
 
 URL Detection Patterns:
+
 ```typescript
 const URL_PATTERNS = [
   /https?:\/\/localhost:\d+/,
@@ -454,6 +461,7 @@ const URL_PATTERNS = [
 **Purpose:** Manage node-pty terminal instances
 
 Responsibilities:
+
 - Spawn PTY processes with configurable shell
 - Track active terminals by ID
 - Handle resize events (SIGWINCH)
@@ -471,8 +479,8 @@ class PtyManager {
 
 interface PtySpawnOptions {
   cwd: string;
-  shell?: string;           // Default: user's default shell
-  args?: string[];          // Shell arguments
+  shell?: string; // Default: user's default shell
+  args?: string[]; // Shell arguments
   env?: Record<string, string>;
   cols: number;
   rows: number;
@@ -484,6 +492,7 @@ interface PtySpawnOptions {
 **Purpose:** Interface with CopyTree for context generation
 
 Responsibilities:
+
 - Execute `copytree` command with appropriate arguments
 - Return generated context as string
 - Handle errors gracefully
@@ -564,6 +573,7 @@ App
 **Migrated from:** `src/components/WorktreeCard.tsx`
 
 Features:
+
 - Activity traffic light (green → yellow → gray decay)
 - Branch name with mood-based border color
 - Truncated file change list with status icons
@@ -572,6 +582,7 @@ Features:
 - Action buttons: Copy Tree, Open in Editor, Open Issue, Open PR
 
 Props:
+
 ```typescript
 interface WorktreeCardProps {
   worktree: WorktreeState;
@@ -589,6 +600,7 @@ interface WorktreeCardProps {
 **New for Electron**
 
 Features:
+
 - xterm.js terminal instance
 - Header with title and close button
 - Toolbar with "Inject Context" button
@@ -610,6 +622,7 @@ interface TerminalPaneProps {
 **Migrated from:** `src/components/ActivityTrafficLight.tsx`
 
 Visual indicator showing recent activity:
+
 - **Neon Green** (0-5s): Very recent activity
 - **Solid Green** (5-30s): Recent activity
 - **Olive** (30-90s): Moderate activity
@@ -793,35 +806,35 @@ canopy-app/
 
 ### Key Files to Migrate
 
-| Original File | Target Location | Notes |
-|--------------|-----------------|-------|
-| `src/types/index.ts` | `electron/types/index.ts` | Core type definitions |
-| `src/services/events.ts` | `electron/services/events.ts` | Adapt for IPC |
-| `src/services/monitor/WorktreeService.ts` | `electron/services/WorktreeService.ts` | Main process |
-| `src/services/monitor/WorktreeMonitor.ts` | `electron/services/WorktreeMonitor.ts` | Main process |
-| `src/services/server/DevServerManager.ts` | `electron/services/DevServerManager.ts` | Main process |
-| `src/components/WorktreeCard.tsx` | `src/components/Worktree/WorktreeCard.tsx` | DOM conversion |
-| `src/components/ActivityTrafficLight.tsx` | `src/components/Worktree/ActivityLight.tsx` | CSS-based |
-| `src/hooks/useWorktreeMonitor.ts` | `src/hooks/useWorktrees.ts` | IPC-based |
-| `src/hooks/useDevServer.ts` | `src/hooks/useDevServer.ts` | IPC-based |
-| `src/utils/colorInterpolation.ts` | `src/utils/colorInterpolation.ts` | Direct copy |
-| `src/theme/colorPalette.ts` | `src/styles/theme.ts` | Tailwind adaptation |
+| Original File                             | Target Location                             | Notes                 |
+| ----------------------------------------- | ------------------------------------------- | --------------------- |
+| `src/types/index.ts`                      | `electron/types/index.ts`                   | Core type definitions |
+| `src/services/events.ts`                  | `electron/services/events.ts`               | Adapt for IPC         |
+| `src/services/monitor/WorktreeService.ts` | `electron/services/WorktreeService.ts`      | Main process          |
+| `src/services/monitor/WorktreeMonitor.ts` | `electron/services/WorktreeMonitor.ts`      | Main process          |
+| `src/services/server/DevServerManager.ts` | `electron/services/DevServerManager.ts`     | Main process          |
+| `src/components/WorktreeCard.tsx`         | `src/components/Worktree/WorktreeCard.tsx`  | DOM conversion        |
+| `src/components/ActivityTrafficLight.tsx` | `src/components/Worktree/ActivityLight.tsx` | CSS-based             |
+| `src/hooks/useWorktreeMonitor.ts`         | `src/hooks/useWorktrees.ts`                 | IPC-based             |
+| `src/hooks/useDevServer.ts`               | `src/hooks/useDevServer.ts`                 | IPC-based             |
+| `src/utils/colorInterpolation.ts`         | `src/utils/colorInterpolation.ts`           | Direct copy           |
+| `src/theme/colorPalette.ts`               | `src/styles/theme.ts`                       | Tailwind adaptation   |
 
 ### Event Channel Mapping
 
-| CLI Event | IPC Channel | Direction |
-|-----------|-------------|-----------|
-| `sys:worktree:update` | `worktree:update` | M→R |
-| `sys:worktree:remove` | `worktree:remove` | M→R |
-| `server:update` | `devserver:update` | M→R |
-| `server:error` | `devserver:error` | M→R |
-| `file:copy-tree` | `copytree:generate` | R→M |
-| `ui:notify` | (renderer only) | - |
+| CLI Event             | IPC Channel         | Direction |
+| --------------------- | ------------------- | --------- |
+| `sys:worktree:update` | `worktree:update`   | M→R       |
+| `sys:worktree:remove` | `worktree:remove`   | M→R       |
+| `server:update`       | `devserver:update`  | M→R       |
+| `server:error`        | `devserver:error`   | M→R       |
+| `file:copy-tree`      | `copytree:generate` | R→M       |
+| `ui:notify`           | (renderer only)     | -         |
 
 ---
 
 ## Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-01-28 | Initial specification |
+| Version | Date       | Changes               |
+| ------- | ---------- | --------------------- |
+| 1.0.0   | 2025-01-28 | Initial specification |

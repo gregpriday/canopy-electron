@@ -1,11 +1,11 @@
-import { useCallback, useState, useEffect, useMemo } from 'react';
-import type { WorktreeState, WorktreeMood } from '../../types';
-import { ActivityLight } from './ActivityLight';
-import { FileChangeList } from './FileChangeList';
-import { ErrorBanner } from '../Errors/ErrorBanner';
-import { useDevServer } from '../../hooks/useDevServer';
-import { useErrorStore, type RetryAction } from '../../store';
-import { cn } from '../../lib/utils';
+import { useCallback, useState, useEffect, useMemo } from "react";
+import type { WorktreeState, WorktreeMood } from "../../types";
+import { ActivityLight } from "./ActivityLight";
+import { FileChangeList } from "./FileChangeList";
+import { ErrorBanner } from "../Errors/ErrorBanner";
+import { useDevServer } from "../../hooks/useDevServer";
+import { useErrorStore, type RetryAction } from "../../store";
+import { cn } from "../../lib/utils";
 
 export interface WorktreeCardProps {
   worktree: WorktreeState;
@@ -24,39 +24,39 @@ export interface WorktreeCardProps {
 }
 
 const MOOD_BORDER_COLORS: Record<WorktreeMood, string> = {
-  active: 'border-blue-400',
-  stable: 'border-green-400',
-  stale: 'border-yellow-400',
-  error: 'border-red-400',
+  active: "border-blue-400",
+  stable: "border-green-400",
+  stale: "border-yellow-400",
+  error: "border-red-400",
 };
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
-function parseNoteWithLinks(text: string): Array<{ type: 'text' | 'link'; content: string }> {
-  const segments: Array<{ type: 'text' | 'link'; content: string }> = [];
+function parseNoteWithLinks(text: string): Array<{ type: "text" | "link"; content: string }> {
+  const segments: Array<{ type: "text" | "link"; content: string }> = [];
   let lastIndex = 0;
-  const regex = new RegExp(URL_REGEX.source, 'g');
+  const regex = new RegExp(URL_REGEX.source, "g");
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+      segments.push({ type: "text", content: text.slice(lastIndex, match.index) });
     }
-    segments.push({ type: 'link', content: match[1] });
+    segments.push({ type: "link", content: match[1] });
     lastIndex = match.index + match[0].length;
   }
 
   if (lastIndex < text.length) {
-    segments.push({ type: 'text', content: text.slice(lastIndex) });
+    segments.push({ type: "text", content: text.slice(lastIndex) });
   }
 
   return segments;
 }
 
 function formatPath(targetPath: string): string {
-  const home = process.env.HOME || '';
+  const home = process.env.HOME || "";
   if (home && targetPath.startsWith(home)) {
-    return targetPath.replace(home, '~');
+    return targetPath.replace(home, "~");
   }
   return targetPath;
 }
@@ -76,19 +76,21 @@ export function WorktreeCard({
   onInjectContext,
   isInjecting = false,
 }: WorktreeCardProps) {
-  const mood = worktree.mood || 'stable';
+  const mood = worktree.mood || "stable";
   const borderColor = MOOD_BORDER_COLORS[mood];
 
-  const { state: serverState, hasDevScript, isLoading: serverLoading } = useDevServer({
+  const {
+    state: serverState,
+    hasDevScript,
+    isLoading: serverLoading,
+  } = useDevServer({
     worktreeId: worktree.id,
     worktreePath: worktree.path,
   });
 
   // Get errors for this worktree - subscribe to store changes
   const worktreeErrors = useErrorStore((state) =>
-    state.errors.filter(
-      (e) => e.context?.worktreeId === worktree.id && !e.dismissed
-    )
+    state.errors.filter((e) => e.context?.worktreeId === worktree.id && !e.dismissed)
   );
   const dismissError = useErrorStore((state) => state.dismissError);
   const removeError = useErrorStore((state) => state.removeError);
@@ -102,7 +104,7 @@ export function WorktreeCard({
           // On successful retry, remove the error from the store
           removeError(errorId);
         } catch (error) {
-          console.error('Error retry failed:', error);
+          console.error("Error retry failed:", error);
           // Retry failed - the main process will send a new error event
         }
       }
@@ -112,7 +114,7 @@ export function WorktreeCard({
 
   // For main worktree, notes expire after 10 minutes (real-time)
   const [now, setNow] = useState(() => Date.now());
-  const isMainWorktree = worktree.branch === 'main' || worktree.branch === 'master';
+  const isMainWorktree = worktree.branch === "main" || worktree.branch === "master";
 
   // Set up timer to re-check note expiration for main worktree
   useEffect(() => {
@@ -178,7 +180,8 @@ export function WorktreeCard({
 
   // Summary component
   let summaryContent: React.ReactNode;
-  const isCommitMessage = worktree.summary?.startsWith('Last commit:') || worktree.summary?.startsWith('✅');
+  const isCommitMessage =
+    worktree.summary?.startsWith("Last commit:") || worktree.summary?.startsWith("✅");
 
   if (worktree.summary) {
     if (isCommitMessage) {
@@ -188,10 +191,10 @@ export function WorktreeCard({
     } else {
       summaryContent = <span className="text-gray-500">{worktree.summary}</span>;
     }
-  } else if (worktree.aiStatus === 'loading') {
+  } else if (worktree.aiStatus === "loading") {
     summaryContent = <span className="text-gray-500">Generating summary...</span>;
   } else {
-    const fallbackText = worktree.branch ? `Clean: ${worktree.branch}` : 'Ready';
+    const fallbackText = worktree.branch ? `Clean: ${worktree.branch}` : "Ready";
     summaryContent = <span className="text-gray-500">{fallbackText}</span>;
   }
 
@@ -199,13 +202,13 @@ export function WorktreeCard({
   const getServerStatusIndicator = () => {
     if (!serverState) return null;
     switch (serverState.status) {
-      case 'stopped':
+      case "stopped":
         return <span className="text-gray-500">○</span>;
-      case 'starting':
+      case "starting":
         return <span className="text-yellow-400">◐</span>;
-      case 'running':
+      case "running":
         return <span className="text-green-400">●</span>;
-      case 'error':
+      case "error":
         return <span className="text-red-400">●</span>;
       default:
         return <span className="text-gray-500">○</span>;
@@ -215,20 +218,20 @@ export function WorktreeCard({
   const getServerStatusText = () => {
     if (!serverState) return null;
     switch (serverState.status) {
-      case 'stopped':
+      case "stopped":
         return <span className="text-gray-500">Dev Server</span>;
-      case 'starting':
+      case "starting":
         return <span className="text-yellow-400">Starting...</span>;
-      case 'running':
+      case "running":
         return serverState.url ? (
           <span className="text-green-400">{serverState.url}</span>
         ) : (
           <span className="text-green-400">Running</span>
         );
-      case 'error':
+      case "error":
         return (
           <span className="text-red-400">
-            {serverState.errorMessage ? `Error: ${serverState.errorMessage.slice(0, 40)}` : 'Error'}
+            {serverState.errorMessage ? `Error: ${serverState.errorMessage.slice(0, 40)}` : "Error"}
           </span>
         );
       default:
@@ -237,48 +240,48 @@ export function WorktreeCard({
   };
 
   const getServerButtonLabel = () => {
-    if (!serverState) return 'Start';
+    if (!serverState) return "Start";
     switch (serverState.status) {
-      case 'stopped':
-        return 'Start';
-      case 'starting':
-        return '...';
-      case 'running':
-        return 'Stop';
-      case 'error':
-        return 'Retry';
+      case "stopped":
+        return "Start";
+      case "starting":
+        return "...";
+      case "running":
+        return "Stop";
+      case "error":
+        return "Retry";
       default:
-        return 'Start';
+        return "Start";
     }
   };
 
   const getServerButtonColor = () => {
-    if (!serverState) return 'text-green-400';
+    if (!serverState) return "text-green-400";
     switch (serverState.status) {
-      case 'stopped':
-        return 'text-green-400';
-      case 'starting':
-        return 'text-yellow-400';
-      case 'running':
-        return 'text-red-400';
-      case 'error':
-        return 'text-green-400';
+      case "stopped":
+        return "text-green-400";
+      case "starting":
+        return "text-yellow-400";
+      case "running":
+        return "text-red-400";
+      case "error":
+        return "text-green-400";
       default:
-        return 'text-gray-400';
+        return "text-gray-400";
     }
   };
 
   return (
     <div
       className={cn(
-        'border-2 rounded-lg p-3 mb-3 cursor-pointer transition-all',
+        "border-2 rounded-lg p-3 mb-3 cursor-pointer transition-all",
         borderColor,
-        isFocused && 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900',
-        'hover:shadow-lg hover:shadow-blue-500/20'
+        isFocused && "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900",
+        "hover:shadow-lg hover:shadow-blue-500/20"
       )}
       onClick={onSelect}
       onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+        if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
           e.preventDefault();
           onSelect();
         }
@@ -306,14 +309,14 @@ export function WorktreeCard({
             }}
             disabled={isInjecting}
             className={cn(
-              'text-xs px-2 py-1 border border-purple-600 rounded text-purple-400',
+              "text-xs px-2 py-1 border border-purple-600 rounded text-purple-400",
               isInjecting
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-purple-900 hover:border-purple-500'
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-purple-900 hover:border-purple-500"
             )}
             title="Inject context into focused terminal (Ctrl+Shift+I)"
           >
-            {isInjecting ? '...' : 'Inject'}
+            {isInjecting ? "..." : "Inject"}
           </button>
         )}
         <button
@@ -353,12 +356,12 @@ export function WorktreeCard({
       <div className="mb-1 flex items-center gap-2">
         <ActivityLight timestamp={worktree.lastActivityTimestamp} />
         {isActive && <span className="text-blue-400">●</span>}
-        <span className={cn('font-bold', mood === 'active' ? 'text-yellow-400' : 'text-gray-200')}>
+        <span className={cn("font-bold", mood === "active" ? "text-yellow-400" : "text-gray-200")}>
           {branchLabel}
         </span>
         {!worktree.branch && <span className="text-yellow-400">(detached)</span>}
-        {worktree.aiStatus === 'disabled' && <span className="text-gray-500">[AI off]</span>}
-        {worktree.aiStatus === 'error' && <span className="text-red-400">[AI err]</span>}
+        {worktree.aiStatus === "disabled" && <span className="text-gray-500">[AI off]</span>}
+        {worktree.aiStatus === "error" && <span className="text-red-400">[AI err]</span>}
       </div>
 
       {/* Path (clickable) */}
@@ -369,8 +372,8 @@ export function WorktreeCard({
             handlePathClick();
           }}
           className={cn(
-            'text-sm text-gray-500 hover:text-gray-400 hover:underline text-left',
-            isFocused && 'underline'
+            "text-sm text-gray-500 hover:text-gray-400 hover:underline text-left",
+            isFocused && "underline"
           )}
         >
           {displayPath}
@@ -399,15 +402,17 @@ export function WorktreeCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!serverLoading && serverState.status !== 'starting') {
+              if (!serverLoading && serverState.status !== "starting") {
                 onToggleServer();
               }
             }}
-            disabled={serverLoading || serverState.status === 'starting'}
+            disabled={serverLoading || serverState.status === "starting"}
             className={cn(
-              'text-xs px-2 py-1 border rounded font-bold',
+              "text-xs px-2 py-1 border rounded font-bold",
               getServerButtonColor(),
-              (serverLoading || serverState.status === 'starting') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
+              serverLoading || serverState.status === "starting"
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-gray-800"
             )}
           >
             [{getServerButtonLabel()}]
@@ -419,7 +424,7 @@ export function WorktreeCard({
       {effectiveNote && (
         <div className="mt-3 text-sm text-gray-300">
           {parsedNoteSegments.map((segment, index) =>
-            segment.type === 'link' ? (
+            segment.type === "link" ? (
               <a
                 key={index}
                 href={segment.content}
@@ -456,9 +461,7 @@ export function WorktreeCard({
             />
           ))}
           {worktreeErrors.length > 3 && (
-            <div className="text-xs text-gray-500">
-              +{worktreeErrors.length - 3} more errors
-            </div>
+            <div className="text-xs text-gray-500">+{worktreeErrors.length - 3} more errors</div>
           )}
         </div>
       )}

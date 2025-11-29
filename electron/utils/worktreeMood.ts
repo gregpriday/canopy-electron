@@ -1,6 +1,6 @@
-import { simpleGit } from 'simple-git';
-import type { Worktree, WorktreeChanges, WorktreeMood } from '../types/index.js';
-import { logWarn } from './logger.js';
+import { simpleGit } from "simple-git";
+import type { Worktree, WorktreeChanges, WorktreeMood } from "../types/index.js";
+import { logWarn } from "./logger.js";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -21,7 +21,7 @@ export async function getLastCommitAgeInDays(worktreePath: string): Promise<numb
     const ageDays = (Date.now() - timestamp) / MS_PER_DAY;
     return ageDays < 0 ? 0 : ageDays;
   } catch (error) {
-    logWarn('Failed to compute last commit age', {
+    logWarn("Failed to compute last commit age", {
       path: worktreePath,
       message: (error as Error).message,
     });
@@ -42,24 +42,24 @@ export async function categorizeWorktree(
     const changedCount = changes?.changedFileCount ?? 0;
 
     if (worktree.branch === mainBranch && changedCount === 0) {
-      return 'stable';
+      return "stable";
     }
 
     if (changedCount > 0) {
-      return 'active';
+      return "active";
     }
 
     const ageDays = await getLastCommitAgeInDays(worktree.path);
     if (ageDays !== null && ageDays > staleThresholdDays) {
-      return 'stale';
+      return "stale";
     }
 
-    return 'stable';
+    return "stable";
   } catch (error) {
-    logWarn('Failed to categorize worktree mood', {
+    logWarn("Failed to categorize worktree mood", {
       path: worktree.path,
       message: (error as Error).message,
     });
-    return 'error';
+    return "error";
   }
 }

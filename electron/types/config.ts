@@ -3,7 +3,7 @@
  * Migrated from the original Canopy CLI
  */
 
-import type { KeyMapConfig } from './keymap.js';
+import type { KeyMapConfig } from "./keymap.js";
 
 // ============================================================================
 // Opener Configuration
@@ -108,13 +108,13 @@ export interface DevServerConfig {
 /** Configuration for UI behavior and appearance */
 export interface UIConfig {
   /** Action to perform on left click ('open' opens file, 'select' selects it) */
-  leftClickAction?: 'open' | 'select';
+  leftClickAction?: "open" | "select";
   /** Use compact mode for denser information display */
   compactMode?: boolean;
   /** Highlight the active path in the tree */
   activePathHighlight?: boolean;
   /** Color for active path highlight */
-  activePathColor?: 'cyan' | 'blue' | 'green';
+  activePathColor?: "cyan" | "blue" | "green";
 }
 
 /** Configuration for worktree features */
@@ -128,11 +128,11 @@ export interface WorktreesConfig {
 /** Configuration for git-related display */
 export interface GitDisplayConfig {
   /** Style for git status indicators ('letter' = M/A/D, 'glyph' = colored dots) */
-  statusStyle?: 'letter' | 'glyph';
+  statusStyle?: "letter" | "glyph";
   /** Enable folder heat coloring based on changes */
   folderHeatMap?: boolean;
   /** Intensity of heat map coloring */
-  heatMapIntensity?: 'subtle' | 'normal' | 'intense';
+  heatMapIntensity?: "subtle" | "normal" | "intense";
 }
 
 // ============================================================================
@@ -146,7 +146,7 @@ export interface CanopyConfig {
   /** Arguments to pass to the editor */
   editorArgs: string[];
   /** Theme mode */
-  theme: 'auto' | 'dark' | 'light';
+  theme: "auto" | "dark" | "light";
   /** Optional path to custom theme JSON file */
   customTheme?: string;
   /** Show hidden files in file tree */
@@ -181,9 +181,9 @@ export interface CanopyConfig {
   /** Maximum depth for tree display (null for unlimited) */
   maxDepth: number | null;
   /** Sort files by this property */
-  sortBy: 'name' | 'size' | 'modified' | 'type';
+  sortBy: "name" | "size" | "modified" | "type";
   /** Sort direction */
-  sortDirection: 'asc' | 'desc';
+  sortDirection: "asc" | "desc";
   /** UI-related configuration */
   ui?: UIConfig;
   /** Worktree feature configuration */
@@ -210,29 +210,29 @@ export interface CanopyConfig {
 
 /** Default configuration values */
 export const DEFAULT_CONFIG: CanopyConfig = {
-  editor: 'code',
-  editorArgs: ['-r'],
-  theme: 'auto',
+  editor: "code",
+  editorArgs: ["-r"],
+  theme: "auto",
   showHidden: false,
   showGitStatus: true,
   showFileSize: false,
   showModifiedTime: false,
   respectGitignore: true,
   customIgnores: [
-    '**/.git/**',
-    '**/node_modules/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/.DS_Store',
-    '**/coverage/**',
-    '**/__pycache__/**',
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.DS_Store",
+    "**/coverage/**",
+    "**/__pycache__/**",
   ],
   copytreeDefaults: {
-    format: 'xml',
+    format: "xml",
     asReference: true,
   },
   openers: {
-    default: { cmd: 'code', args: ['-r'] },
+    default: { cmd: "code", args: ["-r"] },
     byExtension: {},
     byGlob: {},
   },
@@ -241,22 +241,22 @@ export const DEFAULT_CONFIG: CanopyConfig = {
   usePolling: true,
   treeIndent: 2,
   maxDepth: null,
-  sortBy: 'name',
-  sortDirection: 'asc',
+  sortBy: "name",
+  sortDirection: "asc",
   ui: {
-    leftClickAction: 'open',
+    leftClickAction: "open",
     compactMode: true,
     activePathHighlight: true,
-    activePathColor: 'cyan',
+    activePathColor: "cyan",
   },
   worktrees: {
     enable: true,
     showInHeader: true,
   },
   git: {
-    statusStyle: 'glyph',
+    statusStyle: "glyph",
     folderHeatMap: true,
-    heatMapIntensity: 'normal',
+    heatMapIntensity: "normal",
   },
   quickLinks: {
     enabled: true,
@@ -275,6 +275,6 @@ export const DEFAULT_CONFIG: CanopyConfig = {
   },
   note: {
     enabled: true,
-    filename: 'canopy/note',
+    filename: "canopy/note",
   },
 };

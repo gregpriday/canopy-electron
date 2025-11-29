@@ -15,47 +15,47 @@
  * └─────────────────────────────────────────────────┘
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { cn } from '@/lib/utils'
-import { XtermAdapter } from './XtermAdapter'
-import { ErrorBanner } from '../Errors/ErrorBanner'
-import { useErrorStore, type RetryAction } from '@/store'
+import { useState, useCallback, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+import { XtermAdapter } from "./XtermAdapter";
+import { ErrorBanner } from "../Errors/ErrorBanner";
+import { useErrorStore, type RetryAction } from "@/store";
 
-export type TerminalType = 'shell' | 'claude' | 'gemini' | 'custom'
+export type TerminalType = "shell" | "claude" | "gemini" | "custom";
 
 export interface TerminalPaneProps {
   /** Unique terminal identifier */
-  id: string
+  id: string;
   /** Display title for the terminal */
-  title: string
+  title: string;
   /** Type of terminal (affects icon display) */
-  type: TerminalType
+  type: TerminalType;
   /** Associated worktree ID (enables inject context button) */
-  worktreeId?: string
+  worktreeId?: string;
   /** Working directory for the terminal */
-  cwd: string
+  cwd: string;
   /** Whether this terminal pane has focus */
-  isFocused: boolean
+  isFocused: boolean;
   /** Whether this terminal is maximized */
-  isMaximized?: boolean
+  isMaximized?: boolean;
   /** Called when the pane is clicked/focused */
-  onFocus: () => void
+  onFocus: () => void;
   /** Called when the close button is clicked */
-  onClose: () => void
+  onClose: () => void;
   /** Called when inject context button is clicked */
-  onInjectContext?: () => void
+  onInjectContext?: () => void;
   /** Called when double-click on header or maximize button clicked */
-  onToggleMaximize?: () => void
+  onToggleMaximize?: () => void;
   /** Called when user edits the terminal title */
-  onTitleChange?: (newTitle: string) => void
+  onTitleChange?: (newTitle: string) => void;
 }
 
 const TYPE_ICONS: Record<TerminalType, string> = {
-  shell: '🖥️',
-  claude: '🤖',
-  gemini: '✨',
-  custom: '⚡',
-}
+  shell: "🖥️",
+  claude: "🤖",
+  gemini: "✨",
+  custom: "⚡",
+};
 
 export function TerminalPane({
   id,
@@ -71,134 +71,144 @@ export function TerminalPane({
   onToggleMaximize,
   onTitleChange,
 }: TerminalPaneProps) {
-  const [isExited, setIsExited] = useState(false)
-  const [exitCode, setExitCode] = useState<number | null>(null)
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [editingValue, setEditingValue] = useState(title)
-  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isExited, setIsExited] = useState(false);
+  const [exitCode, setExitCode] = useState<number | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingValue, setEditingValue] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Get errors for this terminal - subscribe to store changes
   const terminalErrors = useErrorStore((state) =>
-    state.errors.filter(
-      (e) => e.context?.terminalId === id && !e.dismissed
-    )
-  )
-  const dismissError = useErrorStore((state) => state.dismissError)
-  const removeError = useErrorStore((state) => state.removeError)
+    state.errors.filter((e) => e.context?.terminalId === id && !e.dismissed)
+  );
+  const dismissError = useErrorStore((state) => state.dismissError);
+  const removeError = useErrorStore((state) => state.removeError);
 
   // Handle error retry
   const handleErrorRetry = useCallback(
     async (errorId: string, action: RetryAction, args?: Record<string, unknown>) => {
       if (window.electron?.errors?.retry) {
         try {
-          await window.electron.errors.retry(errorId, action, args)
+          await window.electron.errors.retry(errorId, action, args);
           // On successful retry, remove the error from the store
-          removeError(errorId)
+          removeError(errorId);
         } catch (error) {
-          console.error('Error retry failed:', error)
+          console.error("Error retry failed:", error);
           // Retry failed - the main process will send a new error event
         }
       }
     },
     [removeError]
-  )
+  );
 
   // Reset exit state when terminal ID changes (e.g., terminal restart or reorder)
   useEffect(() => {
-    setIsExited(false)
-    setExitCode(null)
-  }, [id])
+    setIsExited(false);
+    setExitCode(null);
+  }, [id]);
 
   // Sync editing value when title prop changes externally
   useEffect(() => {
     if (!isEditingTitle) {
-      setEditingValue(title)
+      setEditingValue(title);
     }
-  }, [title, isEditingTitle])
+  }, [title, isEditingTitle]);
 
   // Focus and select input when editing starts
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus()
-      titleInputRef.current.select()
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
     }
-  }, [isEditingTitle])
+  }, [isEditingTitle]);
 
-  const handleTitleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent header double-click maximize
-    if (onTitleChange) {
-      setIsEditingTitle(true)
-    }
-  }, [onTitleChange])
+  const handleTitleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent header double-click maximize
+      if (onTitleChange) {
+        setIsEditingTitle(true);
+      }
+    },
+    [onTitleChange]
+  );
 
-  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (onTitleChange && (e.key === 'Enter' || e.key === 'F2')) {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsEditingTitle(true)
-    }
-  }, [onTitleChange])
+  const handleTitleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (onTitleChange && (e.key === "Enter" || e.key === "F2")) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsEditingTitle(true);
+      }
+    },
+    [onTitleChange]
+  );
 
   const handleTitleSave = useCallback(() => {
-    if (!isEditingTitle) return // Guard against blur after cancel
-    setIsEditingTitle(false)
+    if (!isEditingTitle) return; // Guard against blur after cancel
+    setIsEditingTitle(false);
     if (onTitleChange) {
-      onTitleChange(editingValue)
+      onTitleChange(editingValue);
     }
-  }, [isEditingTitle, editingValue, onTitleChange])
+  }, [isEditingTitle, editingValue, onTitleChange]);
 
   const handleTitleCancel = useCallback(() => {
-    setIsEditingTitle(false)
-    setEditingValue(title) // Revert to original
-  }, [title])
+    setIsEditingTitle(false);
+    setEditingValue(title); // Revert to original
+  }, [title]);
 
-  const handleTitleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleTitleSave()
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      handleTitleCancel()
-    }
-  }, [handleTitleSave, handleTitleCancel])
+  const handleTitleInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleTitleSave();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        handleTitleCancel();
+      }
+    },
+    [handleTitleSave, handleTitleCancel]
+  );
 
   const handleExit = useCallback((code: number) => {
-    setIsExited(true)
-    setExitCode(code)
-  }, [])
+    setIsExited(true);
+    setExitCode(code);
+  }, []);
 
   const handleReady = useCallback(() => {
     // Terminal is ready and connected
-  }, [])
+  }, []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Ignore events from xterm's internal input elements (textarea/input)
-    // to avoid intercepting actual terminal typing
-    const target = e.target as HTMLElement
-    if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-      return
-    }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Ignore events from xterm's internal input elements (textarea/input)
+      // to avoid intercepting actual terminal typing
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.tagName === "INPUT") {
+        return;
+      }
 
-    // Also ignore events from buttons to prevent breaking their click handlers
-    if (target.tagName === 'BUTTON' || target !== e.currentTarget) {
-      return
-    }
+      // Also ignore events from buttons to prevent breaking their click handlers
+      if (target.tagName === "BUTTON" || target !== e.currentTarget) {
+        return;
+      }
 
-    // Activate terminal on Enter or Space only when the container itself is focused
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      onFocus()
-    }
-  }, [onFocus])
+      // Activate terminal on Enter or Space only when the container itself is focused
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onFocus();
+      }
+    },
+    [onFocus]
+  );
 
-  const typeIcon = TYPE_ICONS[type]
+  const typeIcon = TYPE_ICONS[type];
 
   return (
     <div
       className={cn(
-        'flex flex-col h-full border rounded-lg overflow-hidden',
-        isFocused ? 'border-canopy-accent' : 'border-canopy-border',
-        isExited && 'opacity-75'
+        "flex flex-col h-full border rounded-lg overflow-hidden",
+        isFocused ? "border-canopy-accent" : "border-canopy-border",
+        isExited && "opacity-75"
       )}
       onClick={onFocus}
       onFocus={onFocus}
@@ -228,26 +238,24 @@ export function TerminalPane({
           ) : (
             <span
               className={cn(
-                'text-sm font-medium text-canopy-text truncate',
-                onTitleChange && 'cursor-text hover:text-canopy-accent'
+                "text-sm font-medium text-canopy-text truncate",
+                onTitleChange && "cursor-text hover:text-canopy-accent"
               )}
               onDoubleClick={handleTitleDoubleClick}
               onKeyDown={handleTitleKeyDown}
               tabIndex={onTitleChange ? 0 : undefined}
-              role={onTitleChange ? 'button' : undefined}
+              role={onTitleChange ? "button" : undefined}
               title={onTitleChange ? `${title} — Double-click or press Enter to edit` : title}
-              aria-label={onTitleChange ? `Terminal title: ${title}. Press Enter or F2 to edit` : undefined}
+              aria-label={
+                onTitleChange ? `Terminal title: ${title}. Press Enter or F2 to edit` : undefined
+              }
             >
               {title}
             </span>
           )}
           {isExited && (
-            <span
-              className="text-xs text-gray-500 shrink-0"
-              role="status"
-              aria-live="polite"
-            >
-              (exited{exitCode !== null ? `: ${exitCode}` : ''})
+            <span className="text-xs text-gray-500 shrink-0" role="status" aria-live="polite">
+              (exited{exitCode !== null ? `: ${exitCode}` : ""})
             </span>
           )}
         </div>
@@ -256,8 +264,8 @@ export function TerminalPane({
           {worktreeId && onInjectContext && (
             <button
               onClick={(e) => {
-                e.stopPropagation()
-                onInjectContext()
+                e.stopPropagation();
+                onInjectContext();
               }}
               className="p-1 hover:bg-gray-700 rounded transition-colors"
               title="Inject Context (Ctrl+Shift+I)"
@@ -270,22 +278,22 @@ export function TerminalPane({
           {onToggleMaximize && (
             <button
               onClick={(e) => {
-                e.stopPropagation()
+                e.stopPropagation();
                 // Focus this terminal before toggling maximize
-                onFocus()
-                onToggleMaximize()
+                onFocus();
+                onToggleMaximize();
               }}
               className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-canopy-text transition-colors"
-              title={isMaximized ? 'Restore (Ctrl+Shift+F)' : 'Maximize (Ctrl+Shift+F)'}
-              aria-label={isMaximized ? 'Restore terminal' : 'Maximize terminal'}
+              title={isMaximized ? "Restore (Ctrl+Shift+F)" : "Maximize (Ctrl+Shift+F)"}
+              aria-label={isMaximized ? "Restore terminal" : "Maximize terminal"}
             >
-              {isMaximized ? '⊖' : '⊕'}
+              {isMaximized ? "⊖" : "⊕"}
             </button>
           )}
           <button
             onClick={(e) => {
-              e.stopPropagation()
-              onClose()
+              e.stopPropagation();
+              onClose();
             }}
             className="p-1 hover:bg-red-900/50 rounded text-gray-400 hover:text-red-400 transition-colors"
             title="Close Terminal (Ctrl+Shift+W)"
@@ -326,7 +334,7 @@ export function TerminalPane({
         />
       </div>
     </div>
-  )
+  );
 }
 
-export default TerminalPane
+export default TerminalPane;

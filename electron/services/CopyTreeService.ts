@@ -9,11 +9,11 @@
  * enabling better performance, streaming support, and richer progress feedback.
  */
 
-import { copy, ConfigManager, CopyTreeError, ValidationError } from 'copytree';
-import type { CopyResult, CopyOptions as SdkCopyOptions } from 'copytree';
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import type { CopyTreeOptions, CopyTreeResult } from '../ipc/types.js';
+import { copy, ConfigManager, CopyTreeError, ValidationError } from "copytree";
+import type { CopyResult, CopyOptions as SdkCopyOptions } from "copytree";
+import * as path from "path";
+import * as fs from "fs/promises";
+import type { CopyTreeOptions, CopyTreeResult } from "../ipc/types.js";
 
 // Re-export types for convenience
 export type { CopyTreeOptions, CopyTreeResult };
@@ -36,9 +36,9 @@ class CopyTreeService {
       // Validation
       if (!path.isAbsolute(rootPath)) {
         return {
-          content: '',
+          content: "",
           fileCount: 0,
-          error: 'rootPath must be an absolute path',
+          error: "rootPath must be an absolute path",
         };
       }
 
@@ -46,7 +46,7 @@ class CopyTreeService {
         await fs.access(rootPath);
       } catch {
         return {
-          content: '',
+          content: "",
           fileCount: 0,
           error: `Path does not exist or is not accessible: ${rootPath}`,
         };
@@ -68,7 +68,7 @@ class CopyTreeService {
         // Output settings (CLI side effects disabled)
         display: false,
         clipboard: false,
-        format: options.format || 'xml',
+        format: options.format || "xml",
 
         // Filtering
         filter: options.filter,
@@ -136,18 +136,18 @@ class CopyTreeService {
    */
   private handleError(error: unknown): CopyTreeResult {
     // Handle cancellation
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       return {
-        content: '',
+        content: "",
         fileCount: 0,
-        error: 'Context generation cancelled',
+        error: "Context generation cancelled",
       };
     }
 
     // Handle SDK specific errors
     if (error instanceof ValidationError) {
       return {
-        content: '',
+        content: "",
         fileCount: 0,
         error: `Validation Error: ${error.message}`,
       };
@@ -155,7 +155,7 @@ class CopyTreeService {
 
     if (error instanceof CopyTreeError) {
       return {
-        content: '',
+        content: "",
         fileCount: 0,
         error: `CopyTree Error [${error.code}]: ${error.message}`,
       };
@@ -164,7 +164,7 @@ class CopyTreeService {
     // Generic error
     const message = error instanceof Error ? error.message : String(error);
     return {
-      content: '',
+      content: "",
       fileCount: 0,
       error: `CopyTree Error: ${message}`,
     };

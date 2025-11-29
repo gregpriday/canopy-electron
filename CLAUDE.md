@@ -51,22 +51,22 @@ All main/renderer communication goes through `contextBridge` in `electron/preloa
 
 ```typescript
 // Renderer calls:
-window.electron.sendKeystroke(data)
-window.electron.onTerminalData(callback)
+window.electron.sendKeystroke(data);
+window.electron.onTerminalData(callback);
 
 // Main process handles via ipcMain:
-ipcMain.on('terminal-keystroke', handler)
-mainWindow.webContents.send('terminal-incoming', data)
+ipcMain.on("terminal-keystroke", handler);
+mainWindow.webContents.send("terminal-incoming", data);
 ```
 
 ### Key Technologies
 
-| Component | Technology |
-|-----------|------------|
-| Terminal emulation | xterm.js + @xterm/addon-fit |
-| PTY (pseudo-terminal) | node-pty (native module) |
-| Git operations | simple-git |
-| Styling | Tailwind CSS v4 |
+| Component             | Technology                  |
+| --------------------- | --------------------------- |
+| Terminal emulation    | xterm.js + @xterm/addon-fit |
+| PTY (pseudo-terminal) | node-pty (native module)    |
+| Git operations        | simple-git                  |
+| Styling               | Tailwind CSS v4             |
 
 ## Project Structure
 
@@ -86,6 +86,7 @@ src/
 ## Installing Dependencies
 
 **IMPORTANT:** Always use `npm install`, never `npm ci`. The `package-lock.json` is gitignored in this project, so `npm ci` will fail. The `npm install` command will:
+
 1. Install all dependencies from `package.json`
 2. Automatically run `npm run rebuild` via the postinstall hook
 3. Rebuild node-pty for Electron's Node version
@@ -120,6 +121,7 @@ This project migrates code from the original Canopy CLI. When working on migrati
 ## Current State
 
 The app currently has:
+
 - Basic Electron window with xterm.js terminal
 - Single PTY process connected to user's shell
 - IPC bridge for terminal data and resize

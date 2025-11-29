@@ -4,45 +4,45 @@
  * Filter controls for the event inspector including type filters and search.
  */
 
-import { useState, useMemo, useEffect } from 'react'
-import { cn } from '@/lib/utils'
-import { Search, X, Filter } from 'lucide-react'
-import type { EventRecord } from '@/store/eventStore'
+import { useState, useMemo, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Search, X, Filter } from "lucide-react";
+import type { EventRecord } from "@/store/eventStore";
 
 interface EventFiltersProps {
-  events: EventRecord[]
+  events: EventRecord[];
   filters: {
-    types?: string[]
-    search?: string
-  }
-  onFiltersChange: (filters: { types?: string[]; search?: string }) => void
-  className?: string
+    types?: string[];
+    search?: string;
+  };
+  onFiltersChange: (filters: { types?: string[]; search?: string }) => void;
+  className?: string;
 }
 
 export function EventFilters({ events, filters, onFiltersChange, className }: EventFiltersProps) {
-  const [searchInput, setSearchInput] = useState(filters.search || '')
-  const [showTypeFilters, setShowTypeFilters] = useState(false)
+  const [searchInput, setSearchInput] = useState(filters.search || "");
+  const [showTypeFilters, setShowTypeFilters] = useState(false);
 
   // Sync search input with filter changes from external sources
   useEffect(() => {
-    setSearchInput(filters.search || '')
-  }, [filters.search])
+    setSearchInput(filters.search || "");
+  }, [filters.search]);
 
   // Get unique event types from all events and compute counts
   const { availableTypes, typeCounts } = useMemo(() => {
-    const types = new Set<string>()
-    const counts = new Map<string, number>()
+    const types = new Set<string>();
+    const counts = new Map<string, number>();
 
     events.forEach((event) => {
-      types.add(event.type)
-      counts.set(event.type, (counts.get(event.type) || 0) + 1)
-    })
+      types.add(event.type);
+      counts.set(event.type, (counts.get(event.type) || 0) + 1);
+    });
 
     return {
       availableTypes: Array.from(types).sort(),
       typeCounts: counts,
-    }
-  }, [events])
+    };
+  }, [events]);
 
   // Group types by category
   const groupedTypes = useMemo(() => {
@@ -56,54 +56,54 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
       file: [],
       ui: [],
       other: [],
-    }
+    };
 
     availableTypes.forEach((type) => {
-      if (type.startsWith('sys:')) groups.system.push(type)
-      else if (type.startsWith('agent:')) groups.agent.push(type)
-      else if (type.startsWith('task:')) groups.task.push(type)
-      else if (type.startsWith('run:')) groups.run.push(type)
-      else if (type.startsWith('server:')) groups.devserver.push(type)
-      else if (type.startsWith('watcher:')) groups.watcher.push(type)
-      else if (type.startsWith('file:')) groups.file.push(type)
-      else if (type.startsWith('ui:')) groups.ui.push(type)
-      else groups.other.push(type)
-    })
+      if (type.startsWith("sys:")) groups.system.push(type);
+      else if (type.startsWith("agent:")) groups.agent.push(type);
+      else if (type.startsWith("task:")) groups.task.push(type);
+      else if (type.startsWith("run:")) groups.run.push(type);
+      else if (type.startsWith("server:")) groups.devserver.push(type);
+      else if (type.startsWith("watcher:")) groups.watcher.push(type);
+      else if (type.startsWith("file:")) groups.file.push(type);
+      else if (type.startsWith("ui:")) groups.ui.push(type);
+      else groups.other.push(type);
+    });
 
     // Remove empty groups
     Object.keys(groups).forEach((key) => {
-      if (groups[key].length === 0) delete groups[key]
-    })
+      if (groups[key].length === 0) delete groups[key];
+    });
 
-    return groups
-  }, [availableTypes])
+    return groups;
+  }, [availableTypes]);
 
   const handleSearchChange = (value: string) => {
-    setSearchInput(value)
-    onFiltersChange({ ...filters, search: value || undefined })
-  }
+    setSearchInput(value);
+    onFiltersChange({ ...filters, search: value || undefined });
+  };
 
   const clearSearch = () => {
-    setSearchInput('')
-    onFiltersChange({ ...filters, search: undefined })
-  }
+    setSearchInput("");
+    onFiltersChange({ ...filters, search: undefined });
+  };
 
   const toggleTypeFilter = (type: string) => {
-    const currentTypes = filters.types || []
+    const currentTypes = filters.types || [];
     const newTypes = currentTypes.includes(type)
       ? currentTypes.filter((t) => t !== type)
-      : [...currentTypes, type]
-    onFiltersChange({ ...filters, types: newTypes.length > 0 ? newTypes : undefined })
-  }
+      : [...currentTypes, type];
+    onFiltersChange({ ...filters, types: newTypes.length > 0 ? newTypes : undefined });
+  };
 
   const clearTypeFilters = () => {
-    onFiltersChange({ ...filters, types: undefined })
-  }
+    onFiltersChange({ ...filters, types: undefined });
+  };
 
-  const activeFilterCount = (filters.types?.length || 0) + (filters.search ? 1 : 0)
+  const activeFilterCount = (filters.types?.length || 0) + (filters.search ? 1 : 0);
 
   return (
-    <div className={cn('flex-shrink-0 border-b bg-background', className)}>
+    <div className={cn("flex-shrink-0 border-b bg-background", className)}>
       {/* Search bar */}
       <div className="p-3 space-y-2">
         <div className="relative">
@@ -114,10 +114,10 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search events..."
             className={cn(
-              'w-full pl-9 pr-9 py-2 text-sm rounded-md',
-              'bg-muted/50 border border-transparent',
-              'focus:bg-background focus:border-primary focus:outline-none',
-              'placeholder:text-muted-foreground'
+              "w-full pl-9 pr-9 py-2 text-sm rounded-md",
+              "bg-muted/50 border border-transparent",
+              "focus:bg-background focus:border-primary focus:outline-none",
+              "placeholder:text-muted-foreground"
             )}
           />
           {searchInput && (
@@ -135,9 +135,9 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
           <button
             onClick={() => setShowTypeFilters(!showTypeFilters)}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors',
-              'hover:bg-muted/50',
-              showTypeFilters && 'bg-muted'
+              "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
+              "hover:bg-muted/50",
+              showTypeFilters && "bg-muted"
             )}
           >
             <Filter className="w-3.5 h-3.5" />
@@ -148,7 +148,7 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
               </span>
             )}
           </button>
-          {(filters.types && filters.types.length > 0) && (
+          {filters.types && filters.types.length > 0 && (
             <button
               onClick={clearTypeFilters}
               className="text-xs text-muted-foreground hover:text-foreground"
@@ -169,7 +169,7 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
               </div>
               <div className="space-y-0.5">
                 {types.map((type) => {
-                  const isChecked = filters.types?.includes(type) || false
+                  const isChecked = filters.types?.includes(type) || false;
                   return (
                     <label
                       key={type}
@@ -186,7 +186,7 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
                         {typeCounts.get(type) || 0}
                       </span>
                     </label>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -194,5 +194,5 @@ export function EventFilters({ events, filters, onFiltersChange, className }: Ev
         </div>
       )}
     </div>
-  )
+  );
 }

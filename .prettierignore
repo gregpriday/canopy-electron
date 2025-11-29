@@ -1,0 +1,33 @@
+# Build outputs
+dist/
+dist-electron/
+release/
+
+# Dependencies
+node_modules/
+
+# Package manager
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build config
+*.config.cjs
+
+# Generated files
+*.min.js
+*.min.css
+
+# Assets
+build/
+*.ico
+*.icns
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.woff
+*.woff2
+*.ttf
+*.eot

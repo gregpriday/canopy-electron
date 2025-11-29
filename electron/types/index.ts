@@ -8,7 +8,7 @@
 // ============================================================================
 
 /** Git file status types */
-export type GitStatus = 'modified' | 'added' | 'deleted' | 'untracked' | 'ignored' | 'renamed';
+export type GitStatus = "modified" | "added" | "deleted" | "untracked" | "ignored" | "renamed";
 
 /** Details about a single file change in a worktree */
 export interface FileChangeDetail {
@@ -53,7 +53,7 @@ export interface WorktreeChanges {
 // ============================================================================
 
 /** High-level mood/state indicator for worktrees */
-export type WorktreeMood = 'stable' | 'active' | 'stale' | 'error';
+export type WorktreeMood = "stable" | "active" | "stale" | "error";
 
 /**
  * AI summary generation status for a worktree.
@@ -62,7 +62,7 @@ export type WorktreeMood = 'stable' | 'active' | 'stale' | 'error';
  * - 'disabled': No OPENAI_API_KEY set, AI features unavailable
  * - 'error': API errors occurred, showing fallback text
  */
-export type AISummaryStatus = 'active' | 'loading' | 'disabled' | 'error';
+export type AISummaryStatus = "active" | "loading" | "disabled" | "error";
 
 /**
  * Represents a single git worktree.
@@ -122,7 +122,7 @@ export interface Worktree {
   prUrl?: string;
 
   /** Pull request state: open, merged, or closed */
-  prState?: 'open' | 'merged' | 'closed';
+  prState?: "open" | "merged" | "closed";
 }
 
 /**
@@ -145,7 +145,7 @@ export interface WorktreeState extends Worktree {
 // ============================================================================
 
 /** Status of a development server process */
-export type DevServerStatus = 'stopped' | 'starting' | 'running' | 'error';
+export type DevServerStatus = "stopped" | "starting" | "running" | "error";
 
 /** State of a development server associated with a worktree */
 export interface DevServerState {
@@ -170,7 +170,7 @@ export interface DevServerState {
 // ============================================================================
 
 /** Type of notification to display */
-export type NotificationType = 'info' | 'success' | 'error' | 'warning';
+export type NotificationType = "info" | "success" | "error" | "warning";
 
 /** A notification message to display to the user */
 export interface Notification {
@@ -183,7 +183,7 @@ export interface Notification {
 }
 
 /** Payload for creating a new notification (id is optional and will be generated) */
-export type NotificationPayload = Omit<Notification, 'id'> & { id?: string };
+export type NotificationPayload = Omit<Notification, "id"> & { id?: string };
 
 // ============================================================================
 // Agent/Task/Run Types (Delegation Events)
@@ -197,7 +197,7 @@ export type NotificationPayload = Omit<Notification, 'id'> & { id?: string };
  * - 'completed': Agent has finished successfully
  * - 'failed': Agent encountered an unrecoverable error
  */
-export type AgentState = 'idle' | 'working' | 'waiting' | 'completed' | 'failed';
+export type AgentState = "idle" | "working" | "waiting" | "completed" | "failed";
 
 /**
  * State of a task in the task management system.
@@ -209,7 +209,14 @@ export type AgentState = 'idle' | 'working' | 'waiting' | 'completed' | 'failed'
  * - 'failed': Task encountered an error and cannot continue
  * - 'cancelled': Task was cancelled before completion
  */
-export type TaskState = 'draft' | 'queued' | 'running' | 'blocked' | 'completed' | 'failed' | 'cancelled';
+export type TaskState =
+  | "draft"
+  | "queued"
+  | "running"
+  | "blocked"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /**
  * Record of an execution instance (a "run").
@@ -227,7 +234,7 @@ export interface RunRecord {
   /** Unix timestamp (ms) when the run ended (undefined if still running) */
   endTime?: number;
   /** Current state of the run */
-  state: 'running' | 'completed' | 'failed' | 'cancelled';
+  state: "running" | "completed" | "failed" | "cancelled";
   /** Error message if state is 'failed' */
   error?: string;
 }
@@ -237,7 +244,7 @@ export interface RunRecord {
 // ============================================================================
 
 /** Type of terminal instance */
-export type TerminalType = 'shell' | 'claude' | 'gemini' | 'custom';
+export type TerminalType = "shell" | "claude" | "gemini" | "custom";
 
 /** Represents a terminal instance in the application */
 export interface TerminalInstance {
@@ -287,5 +294,5 @@ export interface TerminalDimensions {
 // Re-exports
 // ============================================================================
 
-export * from './config.js';
-export * from './keymap.js';
+export * from "./config.js";
+export * from "./keymap.js";

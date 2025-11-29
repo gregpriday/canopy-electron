@@ -35,7 +35,7 @@ export class GitError extends CanopyError {
  */
 export class WorktreeRemovedError extends GitError {
   constructor(path: string, cause?: Error) {
-    super('Worktree directory no longer exists', { path }, cause);
+    super("Worktree directory no longer exists", { path }, cause);
   }
 }
 
@@ -86,27 +86,27 @@ export function isCanopyError(error: unknown): error is CanopyError {
  * Check if error is a permission/access error (EACCES, EPERM)
  */
 export function isPermissionError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
+  if (!error || typeof error !== "object") return false;
   const code = (error as NodeJS.ErrnoException).code;
-  return code === 'EACCES' || code === 'EPERM';
+  return code === "EACCES" || code === "EPERM";
 }
 
 /**
  * Check if error is a "not found" error (ENOENT)
  */
 export function isNotFoundError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  return (error as NodeJS.ErrnoException).code === 'ENOENT';
+  if (!error || typeof error !== "object") return false;
+  return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
 /**
  * Check if error is a transient error that might succeed on retry
  */
 export function isTransientError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
+  if (!error || typeof error !== "object") return false;
   const code = (error as NodeJS.ErrnoException).code;
   // File busy, resource temporarily unavailable, etc.
-  return ['EBUSY', 'EAGAIN', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND'].includes(code || '');
+  return ["EBUSY", "EAGAIN", "ETIMEDOUT", "ECONNRESET", "ENOTFOUND"].includes(code || "");
 }
 
 /**
@@ -128,7 +128,10 @@ export function getUserMessage(error: unknown): string {
  * Extract technical details for logging
  * Handles circular references safely to prevent infinite recursion
  */
-export function getErrorDetails(error: unknown, seen = new WeakSet<Error>()): Record<string, unknown> {
+export function getErrorDetails(
+  error: unknown,
+  seen = new WeakSet<Error>()
+): Record<string, unknown> {
   const details: Record<string, unknown> = {
     message: getUserMessage(error),
   };
@@ -152,7 +155,7 @@ export function getErrorDetails(error: unknown, seen = new WeakSet<Error>()): Re
     }
   }
 
-  if (error && typeof error === 'object') {
+  if (error && typeof error === "object") {
     const nodeError = error as NodeJS.ErrnoException;
     if (nodeError.code) details.code = nodeError.code;
     if (nodeError.errno) details.errno = nodeError.errno;

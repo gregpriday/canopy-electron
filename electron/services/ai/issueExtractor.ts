@@ -1,17 +1,17 @@
 // Regex patterns to try (fast, no API cost)
 const ISSUE_PATTERNS = [
-  /issue-(\d+)/i,           // feature/issue-158-description
-  /issues?\/(\d+)/i,        // fix/issues/42
-  /#(\d+)/,                 // feature/#42-description
-  /gh-(\d+)/i,              // fix/GH-42-login-bug or gh-123
-  /jira-(\d+)/i,            // feature/jira-456-task
+  /issue-(\d+)/i, // feature/issue-158-description
+  /issues?\/(\d+)/i, // fix/issues/42
+  /#(\d+)/, // feature/#42-description
+  /gh-(\d+)/i, // fix/GH-42-login-bug or gh-123
+  /jira-(\d+)/i, // feature/jira-456-task
 ];
 
 // In-memory cache: branch name -> issue number (or null if no issue found)
 const issueCache = new Map<string, number | null>();
 
 // Branches that should never have issue numbers
-const SKIP_BRANCHES = ['main', 'master', 'develop', 'staging', 'production', 'release', 'hotfix'];
+const SKIP_BRANCHES = ["main", "master", "develop", "staging", "production", "release", "hotfix"];
 
 /**
  * Extract issue number synchronously using regex patterns only.
@@ -19,7 +19,7 @@ const SKIP_BRANCHES = ['main', 'master', 'develop', 'staging', 'production', 're
  */
 export function extractIssueNumberSync(branchName: string, folderName?: string): number | null {
   // Handle empty or invalid input
-  if (!branchName || typeof branchName !== 'string') {
+  if (!branchName || typeof branchName !== "string") {
     return null;
   }
 
@@ -38,7 +38,7 @@ export function extractIssueNumberSync(branchName: string, folderName?: string):
 
   // Skip obvious non-issue branches
   const lowerBranch = trimmedBranch.toLowerCase();
-  if (SKIP_BRANCHES.some(skip => lowerBranch === skip || lowerBranch.startsWith(`${skip}/`))) {
+  if (SKIP_BRANCHES.some((skip) => lowerBranch === skip || lowerBranch.startsWith(`${skip}/`))) {
     issueCache.set(cacheKey, null);
     return null;
   }
@@ -79,6 +79,9 @@ export function extractIssueNumberSync(branchName: string, folderName?: string):
  * Async version with AI fallback - currently just wraps sync version
  * TODO: Add AI fallback when implemented
  */
-export async function extractIssueNumber(branchName: string, folderName?: string): Promise<number | null> {
+export async function extractIssueNumber(
+  branchName: string,
+  folderName?: string
+): Promise<number | null> {
   return extractIssueNumberSync(branchName, folderName);
 }

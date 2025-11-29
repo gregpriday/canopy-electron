@@ -6,29 +6,36 @@
  * Logs are also stored in a ring buffer and streamed to the renderer via IPC.
  */
 
-import { getErrorDetails } from './errorTypes.js';
-import { appendFileSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
-import { join, dirname } from 'path';
-import type { BrowserWindow } from 'electron';
-import { logBuffer, type LogEntry } from '../services/LogBuffer.js';
+import { getErrorDetails } from "./errorTypes.js";
+import { appendFileSync, mkdirSync } from "fs";
+import { homedir } from "os";
+import { join, dirname } from "path";
+import type { BrowserWindow } from "electron";
+import { logBuffer, type LogEntry } from "../services/LogBuffer.js";
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = "debug" | "info" | "warn" | "error";
 
 interface LogContext {
   [key: string]: unknown;
 }
 
 // Debug file logging
-const DEBUG_LOG_FILE = join(homedir(), '.config', 'canopy', 'worktree-debug.log');
+const DEBUG_LOG_FILE = join(homedir(), ".config", "canopy", "worktree-debug.log");
 const ENABLE_FILE_LOGGING = false; // Disabled by default
 
 // Sensitive keys that should be redacted from logs
-const SENSITIVE_KEYS = new Set(['token', 'password', 'apiKey', 'secret', 'accessToken', 'refreshToken']);
+const SENSITIVE_KEYS = new Set([
+  "token",
+  "password",
+  "apiKey",
+  "secret",
+  "accessToken",
+  "refreshToken",
+]);
 
 // Add a check for debug mode
-const IS_DEBUG = process.env.NODE_ENV === 'development' || process.env.CANOPY_DEBUG;
-const IS_TEST = process.env.NODE_ENV === 'test';
+const IS_DEBUG = process.env.NODE_ENV === "development" || process.env.CANOPY_DEBUG;
+const IS_TEST = process.env.NODE_ENV === "test";
 
 // Main window reference for IPC
 let mainWindow: BrowserWindow | null = null;
@@ -84,7 +91,7 @@ function flushLogs(): void {
 
   // Send logs as a batch
   for (const log of logsToSend) {
-    mainWindow.webContents.send('logs:entry', log);
+    mainWindow.webContents.send("logs:entry", log);
   }
 
   // Keep remaining logs for next flush
@@ -102,7 +109,7 @@ function flushLogs(): void {
  */
 function getCallerSource(): string | undefined {
   const err = new Error();
-  const stack = err.stack?.split('\n');
+  const stack = err.stack?.split("\n");
   if (!stack || stack.length < 4) return undefined;
 
   // Skip Error, getCallerSource, log function, and the logger function
@@ -118,18 +125,18 @@ function getCallerSource(): string | undefined {
   const fullPath = match[1];
   // Extract just the filename without line numbers
   const pathParts = fullPath.split(/[/\\]/);
-  const fileName = pathParts[pathParts.length - 1]?.split(':')[0];
+  const fileName = pathParts[pathParts.length - 1]?.split(":")[0];
 
   // Provide friendly names for common modules
-  if (fileName?.includes('WorktreeService')) return 'WorktreeService';
-  if (fileName?.includes('WorktreeMonitor')) return 'WorktreeMonitor';
-  if (fileName?.includes('DevServerManager')) return 'DevServerManager';
-  if (fileName?.includes('PtyManager')) return 'PtyManager';
-  if (fileName?.includes('CopyTreeService')) return 'CopyTreeService';
-  if (fileName?.includes('main')) return 'Main';
-  if (fileName?.includes('handlers')) return 'IPC';
+  if (fileName?.includes("WorktreeService")) return "WorktreeService";
+  if (fileName?.includes("WorktreeMonitor")) return "WorktreeMonitor";
+  if (fileName?.includes("DevServerManager")) return "DevServerManager";
+  if (fileName?.includes("PtyManager")) return "PtyManager";
+  if (fileName?.includes("CopyTreeService")) return "CopyTreeService";
+  if (fileName?.includes("main")) return "Main";
+  if (fileName?.includes("handlers")) return "IPC";
 
-  return fileName?.replace(/\.[tj]s$/, '');
+  return fileName?.replace(/\.[tj]s$/, "");
 }
 
 /**
@@ -142,14 +149,14 @@ function safeStringify(value: unknown): string {
       value,
       (key, val) => {
         // Redact sensitive keys
-        if (SENSITIVE_KEYS.has(key)) return '[redacted]';
+        if (SENSITIVE_KEYS.has(key)) return "[redacted]";
 
         // Handle BigInt
-        if (typeof val === 'bigint') return val.toString();
+        if (typeof val === "bigint") return val.toString();
 
         // Handle circular references
-        if (val && typeof val === 'object') {
-          if (seen.has(val as object)) return '[Circular]';
+        if (val && typeof val === "object") {
+          if (seen.has(val as object)) return "[Circular]";
           seen.add(val as object);
         }
 
@@ -171,13 +178,13 @@ function writeToLogFile(level: string, message: string, context?: LogContext): v
 
   try {
     const timestamp = new Date().toISOString();
-    const contextStr = context ? ` ${JSON.stringify(context)}` : '';
+    const contextStr = context ? ` ${JSON.stringify(context)}` : "";
     const logLine = `[${timestamp}] [${level}] ${message}${contextStr}\n`;
 
     // Ensure directory exists before writing
     mkdirSync(dirname(DEBUG_LOG_FILE), { recursive: true });
 
-    appendFileSync(DEBUG_LOG_FILE, logLine, 'utf8');
+    appendFileSync(DEBUG_LOG_FILE, logLine, "utf8");
   } catch (error) {
     // Silently fail if we can't write to log file
   }
@@ -214,16 +221,16 @@ function redactSensitiveData(obj: Record<string, unknown>): Record<string, unkno
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (SENSITIVE_KEYS.has(key.toLowerCase())) {
-      result[key] = '[redacted]';
+      result[key] = "[redacted]";
     } else if (Array.isArray(value)) {
       // Recursively redact arrays
-      result[key] = value.map(item => {
-        if (item && typeof item === 'object') {
+      result[key] = value.map((item) => {
+        if (item && typeof item === "object") {
           return redactSensitiveData(item as Record<string, unknown>);
         }
         return item;
       });
-    } else if (value && typeof value === 'object') {
+    } else if (value && typeof value === "object") {
       result[key] = redactSensitiveData(value as Record<string, unknown>);
     } else {
       result[key] = value;
@@ -236,10 +243,10 @@ function redactSensitiveData(obj: Record<string, unknown>): Record<string, unkno
  * Log a debug message (development only, filtered in production)
  */
 export function logDebug(message: string, context?: LogContext): void {
-  log('debug', message, context);
-  writeToLogFile('DEBUG', message, context);
+  log("debug", message, context);
+  writeToLogFile("DEBUG", message, context);
   if (IS_DEBUG && !IS_TEST) {
-    console.log(`[DEBUG] ${message}`, context ? safeStringify(context) : '');
+    console.log(`[DEBUG] ${message}`, context ? safeStringify(context) : "");
   }
 }
 
@@ -247,10 +254,10 @@ export function logDebug(message: string, context?: LogContext): void {
  * Log an info message
  */
 export function logInfo(message: string, context?: LogContext): void {
-  log('info', message, context);
-  writeToLogFile('INFO', message, context);
+  log("info", message, context);
+  writeToLogFile("INFO", message, context);
   if (IS_DEBUG && !IS_TEST) {
-    console.log(`[INFO] ${message}`, context ? safeStringify(context) : '');
+    console.log(`[INFO] ${message}`, context ? safeStringify(context) : "");
   }
 }
 
@@ -258,10 +265,10 @@ export function logInfo(message: string, context?: LogContext): void {
  * Log a warning message
  */
 export function logWarn(message: string, context?: LogContext): void {
-  log('warn', message, context);
-  writeToLogFile('WARN', message, context);
+  log("warn", message, context);
+  writeToLogFile("WARN", message, context);
   if (IS_DEBUG && !IS_TEST) {
-    console.warn(`[WARN] ${message}`, context ? safeStringify(context) : '');
+    console.warn(`[WARN] ${message}`, context ? safeStringify(context) : "");
   }
 }
 
@@ -271,14 +278,14 @@ export function logWarn(message: string, context?: LogContext): void {
 export function logError(message: string, error?: unknown, context?: LogContext): void {
   const errorDetails = error ? getErrorDetails(error) : undefined;
   const fullContext = { ...context, error: errorDetails };
-  log('error', message, fullContext);
-  writeToLogFile('ERROR', message, fullContext);
+  log("error", message, fullContext);
+  writeToLogFile("ERROR", message, fullContext);
 
   if (IS_TEST) return; // Suppress errors in tests to keep output clean
 
   console.error(
     `[ERROR] ${message}`,
-    errorDetails ? safeStringify(errorDetails) : '',
-    context ? safeStringify(context) : ''
+    errorDetails ? safeStringify(errorDetails) : "",
+    context ? safeStringify(context) : ""
   );
 }

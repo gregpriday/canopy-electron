@@ -11,88 +11,88 @@
  * - Write throttling for 60fps cap on massive text dumps
  */
 
-import { useEffect, useRef, useCallback, useMemo } from 'react'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
-import { WebglAddon } from '@xterm/addon-webgl'
-import '@xterm/xterm/css/xterm.css'
-import { cn } from '@/lib/utils'
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
+import "@xterm/xterm/css/xterm.css";
+import { cn } from "@/lib/utils";
 
 export interface XtermAdapterProps {
   /** Unique terminal identifier - must match PtyManager terminal ID */
-  terminalId: string
+  terminalId: string;
   /** Called when terminal is ready and connected */
-  onReady?: () => void
+  onReady?: () => void;
   /** Called when PTY process exits */
-  onExit?: (exitCode: number) => void
+  onExit?: (exitCode: number) => void;
   /** Additional CSS classes */
-  className?: string
+  className?: string;
 }
 
 /**
  * Canopy terminal theme - matches the app's dark theme
  */
 const CANOPY_TERMINAL_THEME = {
-  background: '#09090b',
-  foreground: '#fafafa',
-  cursor: '#fafafa',
-  cursorAccent: '#09090b',
-  selectionBackground: '#27272a',
-  selectionForeground: '#fafafa',
-  selectionInactiveBackground: '#18181b',
-  black: '#09090b',
-  red: '#ef4444',
-  green: '#22c55e',
-  yellow: '#eab308',
-  blue: '#3b82f6',
-  magenta: '#a855f7',
-  cyan: '#06b6d4',
-  white: '#fafafa',
-  brightBlack: '#71717a',
-  brightRed: '#f87171',
-  brightGreen: '#4ade80',
-  brightYellow: '#facc15',
-  brightBlue: '#60a5fa',
-  brightMagenta: '#c084fc',
-  brightCyan: '#22d3ee',
-  brightWhite: '#ffffff',
-}
+  background: "#09090b",
+  foreground: "#fafafa",
+  cursor: "#fafafa",
+  cursorAccent: "#09090b",
+  selectionBackground: "#27272a",
+  selectionForeground: "#fafafa",
+  selectionInactiveBackground: "#18181b",
+  black: "#09090b",
+  red: "#ef4444",
+  green: "#22c55e",
+  yellow: "#eab308",
+  blue: "#3b82f6",
+  magenta: "#a855f7",
+  cyan: "#06b6d4",
+  white: "#fafafa",
+  brightBlack: "#71717a",
+  brightRed: "#f87171",
+  brightGreen: "#4ade80",
+  brightYellow: "#facc15",
+  brightBlue: "#60a5fa",
+  brightMagenta: "#c084fc",
+  brightCyan: "#22d3ee",
+  brightWhite: "#ffffff",
+};
 
 /**
  * Create a throttled writer that batches writes at 60fps
  * This prevents performance issues when AI agents dump large amounts of text
  */
 function createThrottledWriter(terminal: Terminal) {
-  let buffer = ''
-  let frameId: number | null = null
+  let buffer = "";
+  let frameId: number | null = null;
 
   const flush = () => {
     if (buffer) {
-      terminal.write(buffer)
-      buffer = ''
+      terminal.write(buffer);
+      buffer = "";
     }
-    frameId = null
-  }
+    frameId = null;
+  };
 
   return {
     write: (data: string) => {
-      buffer += data
+      buffer += data;
       if (!frameId) {
-        frameId = requestAnimationFrame(flush)
+        frameId = requestAnimationFrame(flush);
       }
     },
     dispose: () => {
       if (frameId) {
-        cancelAnimationFrame(frameId)
-        frameId = null
+        cancelAnimationFrame(frameId);
+        frameId = null;
       }
       // Flush any remaining data
       if (buffer) {
-        terminal.write(buffer)
-        buffer = ''
+        terminal.write(buffer);
+        buffer = "";
       }
     },
-  }
+  };
 }
 
 /**
@@ -105,212 +105,205 @@ function createThrottledWriter(terminal: Terminal) {
  * @returns Disposable function to clean up listeners and timers
  */
 function applyJankFix(terminal: Terminal): () => void {
-  let blockCursorHome = false
-  let lastScrollTime = 0
-  let timeoutId: number | null = null
+  let blockCursorHome = false;
+  let lastScrollTime = 0;
+  let timeoutId: number | null = null;
 
   // Detect scrolling
   const scrollDisposable = terminal.onScroll(() => {
-    lastScrollTime = Date.now()
-    blockCursorHome = true
+    lastScrollTime = Date.now();
+    blockCursorHome = true;
 
     // Clear existing timeout
     if (timeoutId !== null) {
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
     }
 
     // Unblock after scroll settles (150ms of no scrolling)
     timeoutId = window.setTimeout(() => {
       if (Date.now() - lastScrollTime > 100) {
-        blockCursorHome = false
+        blockCursorHome = false;
       }
-      timeoutId = null
-    }, 150)
-  })
+      timeoutId = null;
+    }, 150);
+  });
 
   // Register custom CSI handler to intercept cursor positioning commands
   // 'H' is the "Cursor Position" command - ESC[row;colH or ESC[H for home
-  const csiDisposable = terminal.parser.registerCsiHandler({ final: 'H' }, (params) => {
+  const csiDisposable = terminal.parser.registerCsiHandler({ final: "H" }, (params) => {
     // H with no params or params [1,1] or [0,0] is cursor home
-    const row = (params.length > 0 && params[0]) || 1
-    const col = (params.length > 1 && params[1]) || 1
+    const row = (params.length > 0 && params[0]) || 1;
+    const col = (params.length > 1 && params[1]) || 1;
 
     if (blockCursorHome && row === 1 && col === 1) {
       // Block the sequence during scroll - return true to indicate "handled"
-      return true
+      return true;
     }
 
     // Let default handler process it - return false to indicate "not handled"
-    return false
-  })
+    return false;
+  });
 
   // Return cleanup function
   return () => {
     if (timeoutId !== null) {
-      clearTimeout(timeoutId)
-      timeoutId = null
+      clearTimeout(timeoutId);
+      timeoutId = null;
     }
-    scrollDisposable.dispose()
-    csiDisposable.dispose()
-  }
+    scrollDisposable.dispose();
+    csiDisposable.dispose();
+  };
 }
 
-export function XtermAdapter({
-  terminalId,
-  onReady,
-  onExit,
-  className,
-}: XtermAdapterProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const terminalRef = useRef<Terminal | null>(null)
-  const fitAddonRef = useRef<FitAddon | null>(null)
-  const throttledWriterRef = useRef<ReturnType<typeof createThrottledWriter> | null>(null)
-  const jankFixDisposeRef = useRef<(() => void) | null>(null)
-  const resizeFrameIdRef = useRef<number | null>(null)
+export function XtermAdapter({ terminalId, onReady, onExit, className }: XtermAdapterProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
+  const throttledWriterRef = useRef<ReturnType<typeof createThrottledWriter> | null>(null);
+  const jankFixDisposeRef = useRef<(() => void) | null>(null);
+  const resizeFrameIdRef = useRef<number | null>(null);
 
   // Memoize terminal options
-  const terminalOptions = useMemo(() => ({
-    cursorBlink: true,
-    fontSize: 14,
-    fontFamily: 'JetBrains Mono, Menlo, Monaco, Consolas, monospace',
-    theme: CANOPY_TERMINAL_THEME,
-    allowProposedApi: true, // Required for CSI parser access
-    smoothScrollDuration: 0, // Disable smooth scroll for better performance
-    scrollback: 10000, // Reasonable scrollback buffer
-  }), [])
+  const terminalOptions = useMemo(
+    () => ({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: "JetBrains Mono, Menlo, Monaco, Consolas, monospace",
+      theme: CANOPY_TERMINAL_THEME,
+      allowProposedApi: true, // Required for CSI parser access
+      smoothScrollDuration: 0, // Disable smooth scroll for better performance
+      scrollback: 10000, // Reasonable scrollback buffer
+    }),
+    []
+  );
 
   // Handle resize
   const handleResize = useCallback(() => {
     if (fitAddonRef.current && terminalRef.current) {
-      fitAddonRef.current.fit()
-      const { cols, rows } = terminalRef.current
-      window.electron.terminal.resize(terminalId, cols, rows)
+      fitAddonRef.current.fit();
+      const { cols, rows } = terminalRef.current;
+      window.electron.terminal.resize(terminalId, cols, rows);
     }
-  }, [terminalId])
+  }, [terminalId]);
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!containerRef.current) return;
 
     // Prevent double-initialization (React StrictMode)
-    if (terminalRef.current) return
+    if (terminalRef.current) return;
 
     // Create terminal instance
-    const terminal = new Terminal(terminalOptions)
-    terminalRef.current = terminal
+    const terminal = new Terminal(terminalOptions);
+    terminalRef.current = terminal;
 
     // Create fit addon for resize handling
-    const fitAddon = new FitAddon()
-    fitAddonRef.current = fitAddon
-    terminal.loadAddon(fitAddon)
+    const fitAddon = new FitAddon();
+    fitAddonRef.current = fitAddon;
+    terminal.loadAddon(fitAddon);
 
     // Open terminal in container
-    terminal.open(containerRef.current)
+    terminal.open(containerRef.current);
 
     // Try to load WebGL addon for better performance
     try {
-      const webglAddon = new WebglAddon()
+      const webglAddon = new WebglAddon();
       webglAddon.onContextLoss(() => {
-        console.warn('WebGL context lost, falling back to canvas renderer')
-        webglAddon.dispose()
-      })
-      terminal.loadAddon(webglAddon)
+        console.warn("WebGL context lost, falling back to canvas renderer");
+        webglAddon.dispose();
+      });
+      terminal.loadAddon(webglAddon);
     } catch (e) {
-      console.warn('WebGL addon failed to load, using canvas renderer:', e)
+      console.warn("WebGL addon failed to load, using canvas renderer:", e);
     }
 
     // Initial fit
-    fitAddon.fit()
+    fitAddon.fit();
 
     // Apply the jank fix and store the dispose function
-    jankFixDisposeRef.current = applyJankFix(terminal)
+    jankFixDisposeRef.current = applyJankFix(terminal);
 
     // Create throttled writer for performance
-    const throttledWriter = createThrottledWriter(terminal)
-    throttledWriterRef.current = throttledWriter
+    const throttledWriter = createThrottledWriter(terminal);
+    throttledWriterRef.current = throttledWriter;
 
     // Connect to PTY via IPC - data coming FROM the shell
     const unsubData = window.electron.terminal.onData(terminalId, (data: string) => {
-      throttledWriter.write(data)
-    })
+      throttledWriter.write(data);
+    });
 
     // Handle terminal exit
     const unsubExit = window.electron.terminal.onExit((id, exitCode) => {
       if (id === terminalId) {
         // Flush any remaining buffered data
-        throttledWriter.dispose()
-        terminal.write(`\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`)
-        onExit?.(exitCode)
+        throttledWriter.dispose();
+        terminal.write(`\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m\r\n`);
+        onExit?.(exitCode);
       }
-    })
+    });
 
     // Send input FROM the user TO the PTY
     const inputDisposable = terminal.onData((data) => {
-      window.electron.terminal.write(terminalId, data)
-    })
+      window.electron.terminal.write(terminalId, data);
+    });
 
     // Send initial size
-    const { cols, rows } = terminal
-    window.electron.terminal.resize(terminalId, cols, rows)
+    const { cols, rows } = terminal;
+    window.electron.terminal.resize(terminalId, cols, rows);
 
     // Set up resize handling with ResizeObserver
     const resizeObserver = new ResizeObserver(() => {
       // Cancel any pending resize animation frame
       if (resizeFrameIdRef.current !== null) {
-        cancelAnimationFrame(resizeFrameIdRef.current)
+        cancelAnimationFrame(resizeFrameIdRef.current);
       }
 
       // Use requestAnimationFrame to debounce rapid resize events
       resizeFrameIdRef.current = requestAnimationFrame(() => {
         if (fitAddonRef.current && terminalRef.current) {
-          fitAddonRef.current.fit()
-          const { cols, rows } = terminalRef.current
-          window.electron.terminal.resize(terminalId, cols, rows)
+          fitAddonRef.current.fit();
+          const { cols, rows } = terminalRef.current;
+          window.electron.terminal.resize(terminalId, cols, rows);
         }
-        resizeFrameIdRef.current = null
-      })
-    })
-    resizeObserver.observe(containerRef.current)
+        resizeFrameIdRef.current = null;
+      });
+    });
+    resizeObserver.observe(containerRef.current);
 
     // Also listen for window resize events
-    window.addEventListener('resize', handleResize)
+    window.addEventListener("resize", handleResize);
 
     // Signal ready
-    onReady?.()
+    onReady?.();
 
     // Cleanup
     return () => {
       // Cancel pending animation frame
       if (resizeFrameIdRef.current !== null) {
-        cancelAnimationFrame(resizeFrameIdRef.current)
-        resizeFrameIdRef.current = null
+        cancelAnimationFrame(resizeFrameIdRef.current);
+        resizeFrameIdRef.current = null;
       }
 
       // Dispose jank fix listeners and timers
       if (jankFixDisposeRef.current) {
-        jankFixDisposeRef.current()
-        jankFixDisposeRef.current = null
+        jankFixDisposeRef.current();
+        jankFixDisposeRef.current = null;
       }
 
-      window.removeEventListener('resize', handleResize)
-      resizeObserver.disconnect()
-      unsubData()
-      unsubExit()
-      inputDisposable.dispose()
-      throttledWriter.dispose()
-      terminal.dispose()
+      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
+      unsubData();
+      unsubExit();
+      inputDisposable.dispose();
+      throttledWriter.dispose();
+      terminal.dispose();
       // Reset refs to allow re-initialization
-      terminalRef.current = null
-      fitAddonRef.current = null
-      throttledWriterRef.current = null
-    }
-  }, [terminalId, terminalOptions, handleResize, onReady, onExit])
+      terminalRef.current = null;
+      fitAddonRef.current = null;
+      throttledWriterRef.current = null;
+    };
+  }, [terminalId, terminalOptions, handleResize, onReady, onExit]);
 
-  return (
-    <div
-      ref={containerRef}
-      className={cn('w-full h-full min-h-0', className)}
-    />
-  )
+  return <div ref={containerRef} className={cn("w-full h-full min-h-0", className)} />;
 }
 
-export default XtermAdapter
+export default XtermAdapter;

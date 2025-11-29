@@ -1,4 +1,4 @@
-import { events, ALL_EVENT_TYPES, type CanopyEventMap } from './events.js';
+import { events, ALL_EVENT_TYPES, type CanopyEventMap } from "./events.js";
 
 /**
  * Represents a single event record stored in the buffer.
@@ -13,7 +13,7 @@ export interface EventRecord {
   /** Event payload data (may contain sensitive information) */
   payload: any;
   /** Source of the event (always 'main' in Electron main process) */
-  source: 'main' | 'renderer';
+  source: "main" | "renderer";
 }
 
 export interface FilterOptions {
@@ -53,27 +53,24 @@ export class EventBuffer {
    */
   private sanitizePayload(eventType: keyof CanopyEventMap, payload: any): any {
     // Events that may contain sensitive data
-    const sensitiveEventTypes: Array<keyof CanopyEventMap> = [
-      'agent:output',
-      'task:created',
-    ];
+    const sensitiveEventTypes: Array<keyof CanopyEventMap> = ["agent:output", "task:created"];
 
     if (!sensitiveEventTypes.includes(eventType)) {
       return payload;
     }
 
     // For sensitive events, redact the data field or description
-    if (eventType === 'agent:output' && payload && typeof payload.data === 'string') {
+    if (eventType === "agent:output" && payload && typeof payload.data === "string") {
       return {
         ...payload,
-        data: '[REDACTED - May contain sensitive information]',
+        data: "[REDACTED - May contain sensitive information]",
       };
     }
 
-    if (eventType === 'task:created' && payload && typeof payload.description === 'string') {
+    if (eventType === "task:created" && payload && typeof payload.description === "string") {
       return {
         ...payload,
-        description: '[REDACTED - May contain sensitive information]',
+        description: "[REDACTED - May contain sensitive information]",
       };
     }
 
@@ -86,7 +83,7 @@ export class EventBuffer {
    */
   start(): void {
     if (this.unsubscribe) {
-      console.warn('[EventBuffer] Already started');
+      console.warn("[EventBuffer] Already started");
       return;
     }
 
@@ -94,21 +91,24 @@ export class EventBuffer {
 
     // Subscribe to each event type using the shared constant
     for (const eventType of ALL_EVENT_TYPES) {
-      const unsub = events.on(eventType as any, ((payload: any) => {
-        this.push({
-          id: this.generateId(),
-          timestamp: Date.now(),
-          type: eventType,
-          payload: this.sanitizePayload(eventType, payload),
-          source: 'main',
-        });
-      }) as any);
+      const unsub = events.on(
+        eventType as any,
+        ((payload: any) => {
+          this.push({
+            id: this.generateId(),
+            timestamp: Date.now(),
+            type: eventType,
+            payload: this.sanitizePayload(eventType, payload),
+            source: "main",
+          });
+        }) as any
+      );
       unsubscribers.push(unsub);
     }
 
     // Store cleanup function
     this.unsubscribe = () => {
-      unsubscribers.forEach(unsub => unsub());
+      unsubscribers.forEach((unsub) => unsub());
     };
   }
 
@@ -150,20 +150,20 @@ export class EventBuffer {
 
     // Filter by event types
     if (options.types && options.types.length > 0) {
-      filtered = filtered.filter(event => options.types!.includes(event.type));
+      filtered = filtered.filter((event) => options.types!.includes(event.type));
     }
 
     // Filter by timestamp range
     if (options.after !== undefined) {
-      filtered = filtered.filter(event => event.timestamp >= options.after!);
+      filtered = filtered.filter((event) => event.timestamp >= options.after!);
     }
     if (options.before !== undefined) {
-      filtered = filtered.filter(event => event.timestamp <= options.before!);
+      filtered = filtered.filter((event) => event.timestamp <= options.before!);
     }
 
     // Filter by worktree ID
     if (options.worktreeId) {
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter((event) => {
         const payload = event.payload;
         return payload && payload.worktreeId === options.worktreeId;
       });
@@ -171,7 +171,7 @@ export class EventBuffer {
 
     // Filter by agent ID
     if (options.agentId) {
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter((event) => {
         const payload = event.payload;
         return payload && payload.agentId === options.agentId;
       });
@@ -179,7 +179,7 @@ export class EventBuffer {
 
     // Filter by task ID
     if (options.taskId) {
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter((event) => {
         const payload = event.payload;
         return payload && payload.taskId === options.taskId;
       });
@@ -188,7 +188,7 @@ export class EventBuffer {
     // Filter by text search
     if (options.search) {
       const searchLower = options.search.toLowerCase();
-      filtered = filtered.filter(event => {
+      filtered = filtered.filter((event) => {
         // Search in event type
         if (event.type.toLowerCase().includes(searchLower)) {
           return true;

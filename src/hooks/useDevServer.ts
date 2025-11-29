@@ -5,29 +5,29 @@
  * Manages state, start/stop/toggle actions, and dev script detection.
  */
 
-import { useState, useEffect, useCallback } from 'react'
-import type { DevServerState } from '../types'
+import { useState, useEffect, useCallback } from "react";
+import type { DevServerState } from "../types";
 
 interface UseDevServerOptions {
-  worktreeId: string
-  worktreePath?: string
+  worktreeId: string;
+  worktreePath?: string;
 }
 
 interface UseDevServerReturn {
   /** Current dev server state for this worktree */
-  state: DevServerState | null
+  state: DevServerState | null;
   /** Whether the worktree has a detectable dev script */
-  hasDevScript: boolean
+  hasDevScript: boolean;
   /** Start the dev server (optionally with custom command) */
-  start: (command?: string) => Promise<void>
+  start: (command?: string) => Promise<void>;
   /** Stop the dev server */
-  stop: () => Promise<void>
+  stop: () => Promise<void>;
   /** Toggle the dev server state */
-  toggle: () => Promise<void>
+  toggle: () => Promise<void>;
   /** Whether an action is currently in progress */
-  isLoading: boolean
+  isLoading: boolean;
   /** Any error that occurred during the last action */
-  error: string | null
+  error: string | null;
 }
 
 /**
@@ -49,136 +49,144 @@ interface UseDevServerReturn {
  * )
  * ```
  */
-export function useDevServer({ worktreeId, worktreePath }: UseDevServerOptions): UseDevServerReturn {
-  const [state, setState] = useState<DevServerState | null>(null)
-  const [hasDevScript, setHasDevScript] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function useDevServer({
+  worktreeId,
+  worktreePath,
+}: UseDevServerOptions): UseDevServerReturn {
+  const [state, setState] = useState<DevServerState | null>(null);
+  const [hasDevScript, setHasDevScript] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Check for dev script availability on mount or when path changes
   useEffect(() => {
     if (!worktreePath) {
-      setHasDevScript(false)
-      return
+      setHasDevScript(false);
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
 
-    window.electron.devServer.hasDevScript(worktreePath)
-      .then(result => {
+    window.electron.devServer
+      .hasDevScript(worktreePath)
+      .then((result) => {
         if (!cancelled) {
-          setHasDevScript(result)
+          setHasDevScript(result);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setHasDevScript(false)
+          setHasDevScript(false);
         }
-      })
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [worktreePath])
+      cancelled = true;
+    };
+  }, [worktreePath]);
 
   // Get initial state on mount or when worktreeId changes
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
-    window.electron.devServer.getState(worktreeId)
-      .then(state => {
+    window.electron.devServer
+      .getState(worktreeId)
+      .then((state) => {
         if (!cancelled) {
-          setState(state)
+          setState(state);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setState(null)
+          setState(null);
         }
-      })
+      });
 
     return () => {
-      cancelled = true
-    }
-  }, [worktreeId])
+      cancelled = true;
+    };
+  }, [worktreeId]);
 
   // Subscribe to state updates for this worktree
   useEffect(() => {
     const unsubUpdate = window.electron.devServer.onUpdate((newState) => {
       if (newState.worktreeId === worktreeId) {
-        setState(newState)
+        setState(newState);
         // Clear loading state when update arrives
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    })
+    });
 
     const unsubError = window.electron.devServer.onError((data) => {
       if (data.worktreeId === worktreeId) {
-        setError(data.error)
-        setIsLoading(false)
+        setError(data.error);
+        setIsLoading(false);
       }
-    })
+    });
 
     return () => {
-      unsubUpdate()
-      unsubError()
-    }
-  }, [worktreeId])
+      unsubUpdate();
+      unsubError();
+    };
+  }, [worktreeId]);
 
-  const start = useCallback(async (command?: string) => {
-    if (!worktreePath) {
-      setError('Worktree path is required to start dev server')
-      return
-    }
+  const start = useCallback(
+    async (command?: string) => {
+      if (!worktreePath) {
+        setError("Worktree path is required to start dev server");
+        return;
+      }
 
-    setIsLoading(true)
-    setError(null)
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const newState = await window.electron.devServer.start(worktreeId, worktreePath, command)
-      setState(newState)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to start dev server'
-      setError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [worktreeId, worktreePath])
+      try {
+        const newState = await window.electron.devServer.start(worktreeId, worktreePath, command);
+        setState(newState);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to start dev server";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [worktreeId, worktreePath]
+  );
 
   const stop = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const newState = await window.electron.devServer.stop(worktreeId)
-      setState(newState)
+      const newState = await window.electron.devServer.stop(worktreeId);
+      setState(newState);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to stop dev server'
-      setError(message)
+      const message = err instanceof Error ? err.message : "Failed to stop dev server";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [worktreeId])
+  }, [worktreeId]);
 
   const toggle = useCallback(async () => {
     if (!worktreePath) {
-      setError('Worktree path is required to toggle dev server')
-      return
+      setError("Worktree path is required to toggle dev server");
+      return;
     }
 
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const newState = await window.electron.devServer.toggle(worktreeId, worktreePath)
-      setState(newState)
+      const newState = await window.electron.devServer.toggle(worktreeId, worktreePath);
+      setState(newState);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to toggle dev server'
-      setError(message)
+      const message = err instanceof Error ? err.message : "Failed to toggle dev server";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [worktreeId, worktreePath])
+  }, [worktreeId, worktreePath]);
 
   return {
     state,
@@ -188,7 +196,7 @@ export function useDevServer({ worktreeId, worktreePath }: UseDevServerOptions):
     toggle,
     isLoading,
     error,
-  }
+  };
 }
 
 /**
@@ -211,19 +219,19 @@ export function useDevServer({ worktreeId, worktreePath }: UseDevServerOptions):
  * ```
  */
 export function useDevServerStates(): Map<string, DevServerState> {
-  const [states, setStates] = useState<Map<string, DevServerState>>(new Map())
+  const [states, setStates] = useState<Map<string, DevServerState>>(new Map());
 
   useEffect(() => {
     const unsub = window.electron.devServer.onUpdate((state) => {
-      setStates(prev => {
-        const next = new Map(prev)
-        next.set(state.worktreeId, state)
-        return next
-      })
-    })
+      setStates((prev) => {
+        const next = new Map(prev);
+        next.set(state.worktreeId, state);
+        return next;
+      });
+    });
 
-    return unsub
-  }, [])
+    return unsub;
+  }, []);
 
-  return states
+  return states;
 }

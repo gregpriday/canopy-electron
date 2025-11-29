@@ -5,39 +5,39 @@
  * log entries, filters, and panel visibility.
  */
 
-import { create, type StateCreator } from 'zustand'
-import type { LogEntry, LogFilterOptions } from '@/types/electron.d'
+import { create, type StateCreator } from "zustand";
+import type { LogEntry, LogFilterOptions } from "@/types/electron.d";
 
 interface LogsState {
   // Log entries
-  logs: LogEntry[]
+  logs: LogEntry[];
 
   // Panel visibility
-  isOpen: boolean
+  isOpen: boolean;
 
   // Filters
-  filters: LogFilterOptions
+  filters: LogFilterOptions;
 
   // Auto-scroll behavior
-  autoScroll: boolean
+  autoScroll: boolean;
 
   // Expanded log entries
-  expandedIds: Set<string>
+  expandedIds: Set<string>;
 
   // Actions
-  addLog: (entry: LogEntry) => void
-  setLogs: (logs: LogEntry[]) => void
-  clearLogs: () => void
-  togglePanel: () => void
-  setOpen: (open: boolean) => void
-  setFilters: (filters: Partial<LogFilterOptions>) => void
-  clearFilters: () => void
-  setAutoScroll: (autoScroll: boolean) => void
-  toggleExpanded: (id: string) => void
-  collapseAll: () => void
+  addLog: (entry: LogEntry) => void;
+  setLogs: (logs: LogEntry[]) => void;
+  clearLogs: () => void;
+  togglePanel: () => void;
+  setOpen: (open: boolean) => void;
+  setFilters: (filters: Partial<LogFilterOptions>) => void;
+  clearFilters: () => void;
+  setAutoScroll: (autoScroll: boolean) => void;
+  toggleExpanded: (id: string) => void;
+  collapseAll: () => void;
 }
 
-const MAX_LOGS = 500
+const MAX_LOGS = 500;
 
 const createLogsStore: StateCreator<LogsState> = (set) => ({
   logs: [],
@@ -48,12 +48,12 @@ const createLogsStore: StateCreator<LogsState> = (set) => ({
 
   addLog: (entry) =>
     set((state) => {
-      const newLogs = [...state.logs, entry]
+      const newLogs = [...state.logs, entry];
       // Trim if over limit
       if (newLogs.length > MAX_LOGS) {
-        return { logs: newLogs.slice(-MAX_LOGS) }
+        return { logs: newLogs.slice(-MAX_LOGS) };
       }
-      return { logs: newLogs }
+      return { logs: newLogs };
     }),
 
   setLogs: (logs) => set({ logs }),
@@ -75,54 +75,54 @@ const createLogsStore: StateCreator<LogsState> = (set) => ({
 
   toggleExpanded: (id) =>
     set((state) => {
-      const newSet = new Set(state.expandedIds)
+      const newSet = new Set(state.expandedIds);
       if (newSet.has(id)) {
-        newSet.delete(id)
+        newSet.delete(id);
       } else {
-        newSet.add(id)
+        newSet.add(id);
       }
-      return { expandedIds: newSet }
+      return { expandedIds: newSet };
     }),
 
   collapseAll: () => set({ expandedIds: new Set() }),
-})
+});
 
-export const useLogsStore = create<LogsState>()(createLogsStore)
+export const useLogsStore = create<LogsState>()(createLogsStore);
 
 /**
  * Helper to filter logs based on current filters
  */
 export function filterLogs(logs: LogEntry[], filters: LogFilterOptions): LogEntry[] {
-  let filtered = logs
+  let filtered = logs;
 
   // Filter by levels
   if (filters.levels && filters.levels.length > 0) {
-    filtered = filtered.filter((log) => filters.levels!.includes(log.level))
+    filtered = filtered.filter((log) => filters.levels!.includes(log.level));
   }
 
   // Filter by sources
   if (filters.sources && filters.sources.length > 0) {
-    filtered = filtered.filter((log) => log.source && filters.sources!.includes(log.source))
+    filtered = filtered.filter((log) => log.source && filters.sources!.includes(log.source));
   }
 
   // Filter by search text
   if (filters.search) {
-    const searchLower = filters.search.toLowerCase()
+    const searchLower = filters.search.toLowerCase();
     filtered = filtered.filter(
       (log) =>
         log.message.toLowerCase().includes(searchLower) ||
         (log.source && log.source.toLowerCase().includes(searchLower)) ||
         (log.context && JSON.stringify(log.context).toLowerCase().includes(searchLower))
-    )
+    );
   }
 
   // Filter by time range
   if (filters.startTime !== undefined) {
-    filtered = filtered.filter((log) => log.timestamp >= filters.startTime!)
+    filtered = filtered.filter((log) => log.timestamp >= filters.startTime!);
   }
   if (filters.endTime !== undefined) {
-    filtered = filtered.filter((log) => log.timestamp <= filters.endTime!)
+    filtered = filtered.filter((log) => log.timestamp <= filters.endTime!);
   }
 
-  return filtered
+  return filtered;
 }

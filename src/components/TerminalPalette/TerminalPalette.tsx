@@ -11,30 +11,30 @@
  * - Auto-focus search input on open
  */
 
-import { useEffect, useRef, useCallback } from 'react'
-import { cn } from '@/lib/utils'
-import { TerminalListItem } from './TerminalListItem'
-import type { SearchableTerminal } from '@/hooks/useTerminalPalette'
+import { useEffect, useRef, useCallback } from "react";
+import { cn } from "@/lib/utils";
+import { TerminalListItem } from "./TerminalListItem";
+import type { SearchableTerminal } from "@/hooks/useTerminalPalette";
 
 export interface TerminalPaletteProps {
   /** Whether the palette is open */
-  isOpen: boolean
+  isOpen: boolean;
   /** Current search query */
-  query: string
+  query: string;
   /** Filtered terminal results */
-  results: SearchableTerminal[]
+  results: SearchableTerminal[];
   /** Currently selected index */
-  selectedIndex: number
+  selectedIndex: number;
   /** Called when query changes */
-  onQueryChange: (query: string) => void
+  onQueryChange: (query: string) => void;
   /** Called to move selection up */
-  onSelectPrevious: () => void
+  onSelectPrevious: () => void;
   /** Called to move selection down */
-  onSelectNext: () => void
+  onSelectNext: () => void;
   /** Called when a terminal is selected */
-  onSelect: (terminal: SearchableTerminal) => void
+  onSelect: (terminal: SearchableTerminal) => void;
   /** Called to close the palette */
-  onClose: () => void
+  onClose: () => void;
 }
 
 export function TerminalPalette({
@@ -48,78 +48,78 @@ export function TerminalPalette({
   onSelect,
   onClose,
 }: TerminalPaletteProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus input when palette opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
       // Small delay to ensure the modal is rendered
       requestAnimationFrame(() => {
-        inputRef.current?.focus()
-      })
+        inputRef.current?.focus();
+      });
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Scroll selected item into view
   useEffect(() => {
     if (listRef.current && selectedIndex >= 0) {
-      const selectedItem = listRef.current.children[selectedIndex] as HTMLElement
+      const selectedItem = listRef.current.children[selectedIndex] as HTMLElement;
       if (selectedItem) {
-        selectedItem.scrollIntoView({ block: 'nearest' })
+        selectedItem.scrollIntoView({ block: "nearest" });
       }
     }
-  }, [selectedIndex])
+  }, [selectedIndex]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault()
-          onSelectPrevious()
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          onSelectNext()
-          break
-        case 'Enter':
-          e.preventDefault()
+        case "ArrowUp":
+          e.preventDefault();
+          onSelectPrevious();
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          onSelectNext();
+          break;
+        case "Enter":
+          e.preventDefault();
           if (results.length > 0 && selectedIndex >= 0) {
-            onSelect(results[selectedIndex])
+            onSelect(results[selectedIndex]);
           }
-          break
-        case 'Escape':
-          e.preventDefault()
-          onClose()
-          break
-        case 'Tab':
+          break;
+        case "Escape":
+          e.preventDefault();
+          onClose();
+          break;
+        case "Tab":
           // Prevent Tab from moving focus out of the palette
-          e.preventDefault()
+          e.preventDefault();
           if (e.shiftKey) {
-            onSelectPrevious()
+            onSelectPrevious();
           } else {
-            onSelectNext()
+            onSelectNext();
           }
-          break
+          break;
       }
     },
     [results, selectedIndex, onSelectPrevious, onSelectNext, onSelect, onClose]
-  )
+  );
 
   // Handle click outside
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
       // Only close if clicking on the backdrop itself
       if (e.target === e.currentTarget) {
-        onClose()
+        onClose();
       }
     },
     [onClose]
-  )
+  );
 
   if (!isOpen) {
-    return null
+    return null;
   }
 
   return (
@@ -132,8 +132,8 @@ export function TerminalPalette({
     >
       <div
         className={cn(
-          'w-full max-w-xl bg-canopy-bg border border-canopy-border rounded-lg shadow-2xl overflow-hidden',
-          'animate-in fade-in slide-in-from-top-4 duration-150'
+          "w-full max-w-xl bg-canopy-bg border border-canopy-border rounded-lg shadow-2xl overflow-hidden",
+          "animate-in fade-in slide-in-from-top-4 duration-150"
         )}
         onClick={(e) => e.stopPropagation()}
       >
@@ -147,10 +147,10 @@ export function TerminalPalette({
             onKeyDown={handleKeyDown}
             placeholder="Search terminals by name, type, or worktree..."
             className={cn(
-              'w-full px-3 py-2 text-sm',
-              'bg-canopy-sidebar border border-canopy-border rounded-md',
-              'text-canopy-text placeholder:text-canopy-text/40',
-              'focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent'
+              "w-full px-3 py-2 text-sm",
+              "bg-canopy-sidebar border border-canopy-border rounded-md",
+              "text-canopy-text placeholder:text-canopy-text/40",
+              "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent"
             )}
             role="combobox"
             aria-expanded={isOpen}
@@ -175,11 +175,7 @@ export function TerminalPalette({
         >
           {results.length === 0 ? (
             <div className="px-3 py-8 text-center text-canopy-text/50 text-sm">
-              {query.trim() ? (
-                <>No terminals match "{query}"</>
-              ) : (
-                <>No terminals open</>
-              )}
+              {query.trim() ? <>No terminals match "{query}"</> : <>No terminals open</>}
             </div>
           ) : (
             results.map((terminal, index) => (
@@ -215,7 +211,7 @@ export function TerminalPalette({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default TerminalPalette
+export default TerminalPalette;

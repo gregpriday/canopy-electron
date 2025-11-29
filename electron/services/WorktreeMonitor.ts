@@ -1,19 +1,19 @@
-import { EventEmitter } from 'events';
-import { createHash } from 'crypto';
-import { readFile, stat } from 'fs/promises';
-import { join as pathJoin } from 'path';
-import { execSync } from 'child_process';
-import { simpleGit } from 'simple-git';
-import type { Worktree, WorktreeChanges, AISummaryStatus } from '../types/index.js';
-import { DEFAULT_CONFIG } from '../types/config.js';
-import { getWorktreeChangesWithStats, invalidateGitStatusCache } from '../utils/git.js';
-import { WorktreeRemovedError } from '../utils/errorTypes.js';
-import { generateWorktreeSummary } from './ai/worktree.js';
-import { getAIClient } from './ai/client.js';
-import { categorizeWorktree } from '../utils/worktreeMood.js';
-import { logWarn, logError, logInfo, logDebug } from '../utils/logger.js';
-import { events } from './events.js';
-import { extractIssueNumberSync, extractIssueNumber } from './ai/issueExtractor.js';
+import { EventEmitter } from "events";
+import { createHash } from "crypto";
+import { readFile, stat } from "fs/promises";
+import { join as pathJoin } from "path";
+import { execSync } from "child_process";
+import { simpleGit } from "simple-git";
+import type { Worktree, WorktreeChanges, AISummaryStatus } from "../types/index.js";
+import { DEFAULT_CONFIG } from "../types/config.js";
+import { getWorktreeChangesWithStats, invalidateGitStatusCache } from "../utils/git.js";
+import { WorktreeRemovedError } from "../utils/errorTypes.js";
+import { generateWorktreeSummary } from "./ai/worktree.js";
+import { getAIClient } from "./ai/client.js";
+import { categorizeWorktree } from "../utils/worktreeMood.js";
+import { logWarn, logError, logInfo, logDebug } from "../utils/logger.js";
+import { events } from "./events.js";
+import { extractIssueNumberSync, extractIssueNumber } from "./ai/issueExtractor.js";
 
 // Default AI debounce (used when config is not provided)
 const DEFAULT_AI_DEBOUNCE_MS = DEFAULT_CONFIG.ai?.summaryDebounceMs ?? 10000;
@@ -64,7 +64,7 @@ export class WorktreeMonitor extends EventEmitter {
   private mainBranch: string;
 
   // Hash-based change detection
-  private previousStateHash: string = '';
+  private previousStateHash: string = "";
   private lastSummarizedHash: string | null = null;
 
   // Timers
@@ -75,11 +75,10 @@ export class WorktreeMonitor extends EventEmitter {
   private pollingInterval: number = 2000; // Default 2s for active worktree
   private aiBufferDelay: number = DEFAULT_AI_DEBOUNCE_MS; // Configurable AI debounce
   private noteEnabled: boolean = DEFAULT_CONFIG.note?.enabled ?? true;
-  private noteFilename: string = DEFAULT_CONFIG.note?.filename ?? 'canopy/note';
+  private noteFilename: string = DEFAULT_CONFIG.note?.filename ?? "canopy/note";
 
   // Git directory cache (resolved once on first use)
   private gitDir: string | null = null;
-
 
   // Flags
   private isRunning: boolean = false;
@@ -89,7 +88,7 @@ export class WorktreeMonitor extends EventEmitter {
   private pollingEnabled: boolean = false; // Tracks if polling should be active (false when --no-watch)
   private pendingAISummary: boolean = false; // Tracks if AI summary should run after current generation completes
 
-  constructor(worktree: Worktree, mainBranch: string = 'main') {
+  constructor(worktree: Worktree, mainBranch: string = "main") {
     super();
 
     this.id = worktree.id;
@@ -100,11 +99,13 @@ export class WorktreeMonitor extends EventEmitter {
     this.mainBranch = mainBranch;
 
     // Initialize state - determine initial AI status based on API key availability
-    const initialAIStatus: AISummaryStatus = getAIClient() ? 'active' : 'disabled';
+    const initialAIStatus: AISummaryStatus = getAIClient() ? "active" : "disabled";
 
     // Extract issue number from branch name and folder synchronously (regex only)
     // We'll also trigger async extraction for AI fallback
-    const initialIssueNumber = worktree.branch ? extractIssueNumberSync(worktree.branch, worktree.name) : null;
+    const initialIssueNumber = worktree.branch
+      ? extractIssueNumberSync(worktree.branch, worktree.name)
+      : null;
 
     this.state = {
       id: worktree.id,
@@ -114,7 +115,7 @@ export class WorktreeMonitor extends EventEmitter {
       isCurrent: worktree.isCurrent,
       worktreeId: worktree.id,
       worktreeChanges: null,
-      mood: 'stable',
+      mood: "stable",
       summary: worktree.summary,
       summaryLoading: false,
       modifiedCount: worktree.modifiedCount || 0,
@@ -148,7 +149,11 @@ export class WorktreeMonitor extends EventEmitter {
       }
     } catch (error) {
       // Silently ignore - issue extraction is non-critical
-      logDebug('Failed to extract issue number from branch', { branch: branchName, folder: folderName, error: (error as Error).message });
+      logDebug("Failed to extract issue number from branch", {
+        branch: branchName,
+        folder: folderName,
+        error: (error as Error).message,
+      });
     }
   }
 
@@ -158,13 +163,13 @@ export class WorktreeMonitor extends EventEmitter {
    */
   public async start(): Promise<void> {
     if (this.isRunning) {
-      logWarn('WorktreeMonitor already running', { id: this.id });
+      logWarn("WorktreeMonitor already running", { id: this.id });
       return;
     }
 
     this.isRunning = true;
     this.pollingEnabled = true; // Enable polling for normal start
-    logInfo('Starting WorktreeMonitor (polling-based)', { id: this.id, path: this.path });
+    logInfo("Starting WorktreeMonitor (polling-based)", { id: this.id, path: this.path });
 
     // 1. Perform initial fetch immediately
     // This will trigger summary generation via updateGitStatus
@@ -183,7 +188,7 @@ export class WorktreeMonitor extends EventEmitter {
    * Manual refresh (pressing 'r') will still work via the refresh() method.
    */
   public async fetchInitialStatus(): Promise<void> {
-    logInfo('Fetching initial status (no polling)', { id: this.id, path: this.path });
+    logInfo("Fetching initial status (no polling)", { id: this.id, path: this.path });
 
     // Mark as running to allow updateGitStatus to proceed
     // but we won't start the polling timer
@@ -207,7 +212,7 @@ export class WorktreeMonitor extends EventEmitter {
     }
 
     this.isRunning = false;
-    logInfo('Stopping WorktreeMonitor', { id: this.id });
+    logInfo("Stopping WorktreeMonitor", { id: this.id });
 
     // Clear timers
     this.stopPolling();
@@ -306,7 +311,7 @@ export class WorktreeMonitor extends EventEmitter {
       this.state.name = worktree.name;
       this.branch = worktree.branch;
       this.name = worktree.name;
-      logInfo('WorktreeMonitor metadata updated', {
+      logInfo("WorktreeMonitor metadata updated", {
         id: this.id,
         oldBranch,
         newBranch: worktree.branch,
@@ -333,7 +338,6 @@ export class WorktreeMonitor extends EventEmitter {
     }
   }
 
-
   /**
    * Force refresh of git status and AI summary.
    */
@@ -357,10 +361,10 @@ export class WorktreeMonitor extends EventEmitter {
     // Sort by path to ensure order doesn't affect hash
     const signature = changes.changes
       .sort((a, b) => a.path.localeCompare(b.path))
-      .map(f => `${f.path}:${f.status}:${f.insertions || 0}:${f.deletions || 0}`)
-      .join('|');
+      .map((f) => `${f.path}:${f.status}:${f.insertions || 0}:${f.deletions || 0}`)
+      .join("|");
 
-    return createHash('md5').update(signature).digest('hex');
+    return createHash("md5").update(signature).digest("hex");
   }
 
   /**
@@ -371,21 +375,25 @@ export class WorktreeMonitor extends EventEmitter {
    * @param newState - New worktree changes
    * @param oldState - Previous worktree changes (nullable)
    */
-  private emitFileActivityEvents(newState: WorktreeChanges, oldState: WorktreeChanges | null): void {
+  private emitFileActivityEvents(
+    newState: WorktreeChanges,
+    oldState: WorktreeChanges | null
+  ): void {
     if (!oldState) {
       // First load - emit all changed files
-      for (const change of newState.changes.slice(0, 50)) { // Limit to 50 for performance
-        events.emit('watcher:change', {
-          type: change.status === 'added' ? 'add' : 'change',
-          path: change.path
+      for (const change of newState.changes.slice(0, 50)) {
+        // Limit to 50 for performance
+        events.emit("watcher:change", {
+          type: change.status === "added" ? "add" : "change",
+          path: change.path,
         });
       }
       return;
     }
 
     // Compare old vs new to find what changed
-    const oldPaths = new Set(oldState.changes.map(c => c.path));
-    const newPaths = new Set(newState.changes.map(c => c.path));
+    const oldPaths = new Set(oldState.changes.map((c) => c.path));
+    const newPaths = new Set(newState.changes.map((c) => c.path));
 
     // Find added/modified files
     let emittedCount = 0;
@@ -396,9 +404,9 @@ export class WorktreeMonitor extends EventEmitter {
 
       const wasTracked = oldPaths.has(change.path);
       if (!wasTracked || this.hasFileChanged(change, oldState)) {
-        events.emit('watcher:change', {
-          type: wasTracked ? 'change' : 'add',
-          path: change.path
+        events.emit("watcher:change", {
+          type: wasTracked ? "change" : "add",
+          path: change.path,
         });
         emittedCount++;
       }
@@ -409,9 +417,9 @@ export class WorktreeMonitor extends EventEmitter {
       if (emittedCount >= MAX_EVENTS) break;
 
       if (!newPaths.has(oldChange.path)) {
-        events.emit('watcher:change', {
-          type: 'unlink',
-          path: oldChange.path
+        events.emit("watcher:change", {
+          type: "unlink",
+          path: oldChange.path,
         });
         emittedCount++;
       }
@@ -421,13 +429,23 @@ export class WorktreeMonitor extends EventEmitter {
   /**
    * Check if a file has changed between states.
    */
-  private hasFileChanged(newFile: {path: string; status: string; insertions?: number | null; deletions?: number | null}, oldState: WorktreeChanges): boolean {
-    const oldFile = oldState.changes.find(c => c.path === newFile.path);
+  private hasFileChanged(
+    newFile: {
+      path: string;
+      status: string;
+      insertions?: number | null;
+      deletions?: number | null;
+    },
+    oldState: WorktreeChanges
+  ): boolean {
+    const oldFile = oldState.changes.find((c) => c.path === newFile.path);
     if (!oldFile) return true;
 
-    return oldFile.status !== newFile.status ||
-           (oldFile.insertions ?? 0) !== (newFile.insertions ?? 0) ||
-           (oldFile.deletions ?? 0) !== (newFile.deletions ?? 0);
+    return (
+      oldFile.status !== newFile.status ||
+      (oldFile.insertions ?? 0) !== (newFile.insertions ?? 0) ||
+      (oldFile.deletions ?? 0) !== (newFile.deletions ?? 0)
+    );
   }
 
   /**
@@ -477,7 +495,7 @@ export class WorktreeMonitor extends EventEmitter {
 
       // Store previous state for comparison
       const prevChanges = this.state.worktreeChanges;
-      const isInitialLoad = this.previousStateHash === '';
+      const isInitialLoad = this.previousStateHash === "";
       const wasClean = prevChanges ? prevChanges.changedFileCount === 0 : true;
       const isNowClean = newChanges.changedFileCount === 0;
 
@@ -496,7 +514,8 @@ export class WorktreeMonitor extends EventEmitter {
       // 1. State changed (hash is different) AND not initial load - normal activity detection
       // 2. Initial load AND worktree has changes (dirty) - show activity for already-dirty worktrees
       const hasPendingChanges = newChanges.changedFileCount > 0;
-      const shouldUpdateTimestamp = (stateChanged && !isInitialLoad) || (isInitialLoad && hasPendingChanges);
+      const shouldUpdateTimestamp =
+        (stateChanged && !isInitialLoad) || (isInitialLoad && hasPendingChanges);
 
       if (shouldUpdateTimestamp) {
         nextLastActivityTimestamp = Date.now();
@@ -539,12 +558,14 @@ export class WorktreeMonitor extends EventEmitter {
           if (!(isInitialLoad && this.hasGeneratedInitialSummary)) {
             this.hasGeneratedInitialSummary = true;
             shouldTriggerAI = true;
-            logDebug('Will trigger AI summary generation', { id: this.id, isInitialLoad });
+            logDebug("Will trigger AI summary generation", { id: this.id, isInitialLoad });
           }
         } else {
           // Subsequent change while dirty: Schedule AI with buffer
           shouldScheduleAI = true;
-          logDebug(`Will schedule AI summary (${this.aiBufferDelay / 1000}s buffer)`, { id: this.id });
+          logDebug(`Will schedule AI summary (${this.aiBufferDelay / 1000}s buffer)`, {
+            id: this.id,
+          });
         }
       }
 
@@ -566,11 +587,11 @@ export class WorktreeMonitor extends EventEmitter {
           this.mainBranch
         );
       } catch (error) {
-        logWarn('Failed to categorize worktree mood', {
+        logWarn("Failed to categorize worktree mood", {
           id: this.id,
           message: (error as Error).message,
         });
-        nextMood = 'error';
+        nextMood = "error";
       }
 
       // ============================================
@@ -613,7 +634,6 @@ export class WorktreeMonitor extends EventEmitter {
       } else if (shouldScheduleAI) {
         this.scheduleAISummary();
       }
-
     } catch (error) {
       // FIX: Handle worktree directory access errors resiliently
       // Instead of stopping the monitor (which creates a "zombie" state where the UI
@@ -624,12 +644,15 @@ export class WorktreeMonitor extends EventEmitter {
       // 3. The useAppLifecycle hook to detect actual worktree removal via `git worktree list`
       //    and properly clean up through WorktreeService.sync()
       if (error instanceof WorktreeRemovedError) {
-        logWarn('Worktree directory not accessible (transient or deleted)', { id: this.id, path: this.path });
+        logWarn("Worktree directory not accessible (transient or deleted)", {
+          id: this.id,
+          path: this.path,
+        });
 
         this.state = {
           ...this.state,
-          mood: 'error',
-          summary: '⚠️ Directory not accessible',
+          mood: "error",
+          summary: "⚠️ Directory not accessible",
           summaryLoading: false,
         };
 
@@ -643,14 +666,14 @@ export class WorktreeMonitor extends EventEmitter {
       }
 
       // Handle index.lock collision gracefully (don't set mood to error)
-      const errorMessage = (error as Error).message || '';
-      if (errorMessage.includes('index.lock')) {
-        logWarn('Git index locked, skipping this poll cycle', { id: this.id });
+      const errorMessage = (error as Error).message || "";
+      if (errorMessage.includes("index.lock")) {
+        logWarn("Git index locked, skipping this poll cycle", { id: this.id });
         return; // Silent skip - wait for next poll
       }
 
-      logError('Failed to update git status', error as Error, { id: this.id });
-      this.state.mood = 'error';
+      logError("Failed to update git status", error as Error, { id: this.id });
+      this.state.mood = "error";
       this.emitUpdate();
     } finally {
       this.isUpdating = false; // Unlock
@@ -667,16 +690,16 @@ export class WorktreeMonitor extends EventEmitter {
       const git = simpleGit(this.path);
 
       const log = await git.log({ maxCount: 1 });
-      const lastCommitMsg = log.latest?.message ?? '';
+      const lastCommitMsg = log.latest?.message ?? "";
 
       if (lastCommitMsg) {
-        const firstLine = lastCommitMsg.split('\n')[0].trim();
+        const firstLine = lastCommitMsg.split("\n")[0].trim();
         return `✅ ${firstLine}`;
       }
-      return '🌱 Ready to get started';
+      return "🌱 Ready to get started";
     } catch (error) {
-      logError('Failed to fetch last commit message', error as Error, { id: this.id });
-      return '🌱 Ready to get started';
+      logError("Failed to fetch last commit message", error as Error, { id: this.id });
+      return "🌱 Ready to get started";
     }
   }
 
@@ -694,15 +717,15 @@ export class WorktreeMonitor extends EventEmitter {
     try {
       // Use git rev-parse --git-dir to get the actual git directory
       // This works correctly for both regular repos and worktrees
-      const result = execSync('git rev-parse --git-dir', {
+      const result = execSync("git rev-parse --git-dir", {
         cwd: this.path,
-        encoding: 'utf-8',
+        encoding: "utf-8",
         timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       }).trim();
 
       // If relative path, resolve it relative to worktree path
-      if (!result.startsWith('/')) {
+      if (!result.startsWith("/")) {
         this.gitDir = pathJoin(this.path, result);
       } else {
         this.gitDir = result;
@@ -710,7 +733,7 @@ export class WorktreeMonitor extends EventEmitter {
 
       return this.gitDir;
     } catch (error) {
-      logWarn('Failed to resolve git directory', { id: this.id, error: (error as Error).message });
+      logWarn("Failed to resolve git directory", { id: this.id, error: (error as Error).message });
       return null;
     }
   }
@@ -739,7 +762,7 @@ export class WorktreeMonitor extends EventEmitter {
       const timestamp = fileStat.mtimeMs;
 
       // Read file content
-      const content = await readFile(notePath, 'utf-8');
+      const content = await readFile(notePath, "utf-8");
       const trimmed = content.trim();
 
       // Treat empty file as non-existent
@@ -748,18 +771,18 @@ export class WorktreeMonitor extends EventEmitter {
       }
 
       // Get last line only and truncate to 500 chars
-      const lines = trimmed.split('\n');
+      const lines = trimmed.split("\n");
       const lastLine = lines[lines.length - 1].trim();
       if (lastLine.length > 500) {
-        return { content: lastLine.slice(0, 497) + '...', timestamp };
+        return { content: lastLine.slice(0, 497) + "...", timestamp };
       }
       return { content: lastLine, timestamp };
     } catch (error) {
       // File doesn't exist or permission error - treat as non-existent
       // Only log if it's not a simple ENOENT (file not found)
       const code = (error as NodeJS.ErrnoException).code;
-      if (code && code !== 'ENOENT') {
-        logWarn('Failed to read AI note file', { id: this.id, error: (error as Error).message });
+      if (code && code !== "ENOENT") {
+        logWarn("Failed to read AI note file", { id: this.id, error: (error as Error).message });
       }
       return undefined;
     }
@@ -805,30 +828,30 @@ export class WorktreeMonitor extends EventEmitter {
    * - 'error' on failure
    */
   private async updateAISummary(forceUpdate: boolean = false): Promise<void> {
-    logDebug('updateAISummary called', {
+    logDebug("updateAISummary called", {
       id: this.id,
       isRunning: this.isRunning,
       isGeneratingSummary: this.isGeneratingSummary,
-      forceUpdate
+      forceUpdate,
     });
 
     if (!this.isRunning || this.isGeneratingSummary) {
-      logDebug('Skipping AI summary (not running or already generating)', { id: this.id });
+      logDebug("Skipping AI summary (not running or already generating)", { id: this.id });
       return;
     }
 
     // Check if AI is available before proceeding
     if (!getAIClient()) {
-      this.state.aiStatus = 'disabled';
+      this.state.aiStatus = "disabled";
       this.state.summaryLoading = false;
-      logDebug('Skipping AI summary (no API key)', { id: this.id });
+      logDebug("Skipping AI summary (no API key)", { id: this.id });
       this.emitUpdate();
       return;
     }
 
     // Don't generate summary if we don't have changes data yet
     if (!this.state.worktreeChanges) {
-      logDebug('Skipping AI summary (no changes data)', { id: this.id });
+      logDebug("Skipping AI summary (no changes data)", { id: this.id });
       return;
     }
 
@@ -836,15 +859,15 @@ export class WorktreeMonitor extends EventEmitter {
 
     // Dedup logic: don't run AI on exact same state unless forced
     if (!forceUpdate && this.lastSummarizedHash === currentHash) {
-      logDebug('Skipping AI summary (same hash)', { id: this.id, currentHash });
+      logDebug("Skipping AI summary (same hash)", { id: this.id, currentHash });
       this.state.summaryLoading = false;
       this.emitUpdate();
       return;
     }
 
     this.isGeneratingSummary = true;
-    this.state.aiStatus = 'loading';
-    logDebug('Starting AI summary generation', { id: this.id, currentHash });
+    this.state.aiStatus = "loading";
+    logDebug("Starting AI summary generation", { id: this.id, currentHash });
 
     try {
       // Keep showing old summary while AI generates new one
@@ -860,35 +883,34 @@ export class WorktreeMonitor extends EventEmitter {
       if (!this.isRunning) return;
 
       if (result) {
-        logDebug('AI summary generated successfully', {
+        logDebug("AI summary generated successfully", {
           id: this.id,
-          summary: result.summary.substring(0, 50) + '...'
+          summary: result.summary.substring(0, 50) + "...",
         });
         this.state.summary = result.summary;
         this.state.modifiedCount = result.modifiedCount;
-        this.state.aiStatus = 'active';
+        this.state.aiStatus = "active";
 
         // Mark as processed
         this.lastSummarizedHash = currentHash;
         this.emitUpdate();
       } else {
         // generateWorktreeSummary returns null when AI client is unavailable
-        this.state.aiStatus = 'disabled';
+        this.state.aiStatus = "disabled";
         this.emitUpdate();
       }
 
       // Ensure loading flag is off (defensive cleanup)
       this.state.summaryLoading = false;
-
     } catch (error) {
-      logError('AI summary generation failed', error as Error, { id: this.id });
+      logError("AI summary generation failed", error as Error, { id: this.id });
       this.state.summaryLoading = false;
-      this.state.aiStatus = 'error';
+      this.state.aiStatus = "error";
       this.emitUpdate();
       // Keep showing last commit on error (don't change summary)
     } finally {
       this.isGeneratingSummary = false;
-      logDebug('AI summary generation complete', { id: this.id });
+      logDebug("AI summary generation complete", { id: this.id });
 
       // Check if another summary was requested while we were busy
       if (this.pendingAISummary) {
@@ -897,7 +919,6 @@ export class WorktreeMonitor extends EventEmitter {
       }
     }
   }
-
 
   /**
    * Start polling for git status updates.
@@ -927,14 +948,14 @@ export class WorktreeMonitor extends EventEmitter {
    */
   private emitUpdate(): void {
     const state = this.getState();
-    logDebug('emitUpdate called', {
+    logDebug("emitUpdate called", {
       id: this.id,
       summary: state.summary ? `${state.summary.substring(0, 50)}...` : undefined,
       modifiedCount: state.modifiedCount,
       mood: state.mood,
-      stack: new Error().stack?.split('\n').slice(2, 5).join(' <- ')
+      stack: new Error().stack?.split("\n").slice(2, 5).join(" <- "),
     });
-    this.emit('update', state);
-    events.emit('sys:worktree:update', state);
+    this.emit("update", state);
+    events.emit("sys:worktree:update", state);
   }
 }
