@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { ProjectSwitcher } from "@/components/Project";
 
 interface SidebarProps {
   width: number;
@@ -67,13 +68,18 @@ export function Sidebar({ width, onResize, children, className }: SidebarProps) 
     <aside
       ref={sidebarRef}
       className={cn(
-        "relative border-r border-canopy-border bg-canopy-sidebar overflow-y-auto shrink-0",
+        "relative border-r border-canopy-border bg-canopy-sidebar shrink-0 flex flex-col",
         className
       )}
       style={{ width }}
     >
-      {/* Sidebar content */}
-      <div className="h-full overflow-y-auto">{children}</div>
+      {/* Project Switcher at the top */}
+      <div className="shrink-0 border-b border-canopy-border">
+        <ProjectSwitcher />
+      </div>
+
+      {/* Sidebar content (Worktree list) grows to fill space */}
+      <div className="flex-1 overflow-y-auto min-h-0">{children}</div>
 
       {/* Resize handle */}
       <div
