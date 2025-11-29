@@ -94,17 +94,14 @@ export function TerminalGrid({ className, defaultCwd }: TerminalGridProps) {
   }, [addTerminal, defaultCwd]);
 
   // Handle context injection - open file picker modal
-  const handleInjectContext = useCallback(
-    (terminalId: string, worktreeId?: string) => {
-      if (!worktreeId) return;
-      setFilePickerState({
-        isOpen: true,
-        worktreeId,
-        terminalId,
-      });
-    },
-    []
-  );
+  const handleInjectContext = useCallback((terminalId: string, worktreeId?: string) => {
+    if (!worktreeId) return;
+    setFilePickerState({
+      isOpen: true,
+      worktreeId,
+      terminalId,
+    });
+  }, []);
 
   // Handle file picker confirmation
   const handleFilePickerConfirm = useCallback(

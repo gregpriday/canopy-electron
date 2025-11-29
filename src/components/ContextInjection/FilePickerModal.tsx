@@ -22,12 +22,7 @@ export interface FilePickerModalProps {
   onCancel: () => void;
 }
 
-export function FilePickerModal({
-  isOpen,
-  worktreeId,
-  onConfirm,
-  onCancel,
-}: FilePickerModalProps) {
+export function FilePickerModal({ isOpen, worktreeId, onConfirm, onCancel }: FilePickerModalProps) {
   const {
     nodes,
     expanded,
@@ -97,19 +92,14 @@ export function FilePickerModal({
       onClick={(e) => e.stopPropagation()}
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onCancel}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
 
       {/* Dialog content */}
       <div className="relative z-10 w-full max-w-2xl max-h-[80vh] flex flex-col bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-700">
           <div>
-            <h2 className="text-lg font-semibold text-neutral-100">
-              Select Files to Inject
-            </h2>
+            <h2 className="text-lg font-semibold text-neutral-100">Select Files to Inject</h2>
             <p className="text-sm text-neutral-400 mt-1">
               {selectedCount > 0
                 ? `${selectedCount} ${selectedCount === 1 ? "file" : "files"} selected`
@@ -148,19 +138,11 @@ export function FilePickerModal({
         {/* File tree */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading && (
-            <div className="flex items-center justify-center py-8 text-neutral-400">
-              Loading...
-            </div>
+            <div className="flex items-center justify-center py-8 text-neutral-400">Loading...</div>
           )}
-          {error && (
-            <div className="text-red-400 py-4">
-              Error: {error}
-            </div>
-          )}
+          {error && <div className="text-red-400 py-4">Error: {error}</div>}
           {!loading && !error && nodes.length === 0 && (
-            <div className="text-neutral-500 py-8 text-center">
-              No files found
-            </div>
+            <div className="text-neutral-500 py-8 text-center">No files found</div>
           )}
           {!loading && !error && nodes.length > 0 && (
             <FileTreeView
@@ -175,12 +157,7 @@ export function FilePickerModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-700">
-          <Button
-            onClick={clearSelection}
-            variant="ghost"
-            size="sm"
-            disabled={selectedCount === 0}
-          >
+          <Button onClick={clearSelection} variant="ghost" size="sm" disabled={selectedCount === 0}>
             Clear Selection
           </Button>
           <div className="flex gap-2">
@@ -331,9 +308,7 @@ function FileTreeNode({
 
         {/* Size for files */}
         {!node.isDirectory && node.size !== undefined && (
-          <span className="flex-shrink-0 text-xs text-neutral-500">
-            {formatBytes(node.size)}
-          </span>
+          <span className="flex-shrink-0 text-xs text-neutral-500">{formatBytes(node.size)}</span>
         )}
       </div>
 

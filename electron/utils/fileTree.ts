@@ -16,10 +16,7 @@ import type { FileTreeNode } from "../ipc/types.js";
  * @param dirPath - Optional relative path to a subdirectory (defaults to root)
  * @returns Array of FileTreeNode objects
  */
-export async function getFileTree(
-  basePath: string,
-  dirPath: string = ""
-): Promise<FileTreeNode[]> {
+export async function getFileTree(basePath: string, dirPath: string = ""): Promise<FileTreeNode[]> {
   // Normalize and validate dirPath to prevent path traversal
   const normalizedDirPath = path.normalize(dirPath).replace(/^(\.\.[/\\])+/, "");
   const targetPath = path.resolve(basePath, normalizedDirPath);
