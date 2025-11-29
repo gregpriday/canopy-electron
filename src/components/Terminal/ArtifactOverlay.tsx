@@ -196,21 +196,21 @@ export function ArtifactOverlay({ terminalId, worktreeId, cwd, className }: Arti
 
   const handleCopy = useCallback(
     async (artifact: Artifact) => {
-      await copyToClipboard(artifact);
+      return await copyToClipboard(artifact);
     },
     [copyToClipboard]
   );
 
   const handleSave = useCallback(
     async (artifact: Artifact) => {
-      await saveToFile(artifact);
+      return await saveToFile(artifact);
     },
     [saveToFile]
   );
 
   const handleApplyPatch = useCallback(
     async (artifact: Artifact) => {
-      await applyPatch(artifact);
+      return await applyPatch(artifact);
     },
     [applyPatch]
   );

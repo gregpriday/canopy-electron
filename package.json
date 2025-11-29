@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Canopy IDE - An Electron-based development environment",
   "author": "Canopy Team",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"npm run build:main && cross-env NODE_ENV=development electron .\" \"vite\"",
