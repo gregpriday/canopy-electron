@@ -23,6 +23,18 @@ export interface StoreSchema {
       cwd: string;
       worktreeId?: string;
     }>;
+    recipes?: Array<{
+      id: string;
+      name: string;
+      worktreeId?: string;
+      terminals: Array<{
+        type: "claude" | "gemini" | "shell" | "custom";
+        title?: string;
+        command?: string;
+        env?: Record<string, string>;
+      }>;
+      createdAt: number;
+    }>;
   };
 }
 
@@ -39,6 +51,7 @@ export const store = new Store<StoreSchema>({
       sidebarWidth: 350,
       recentDirectories: [],
       terminals: [],
+      recipes: [],
     },
   },
 });
