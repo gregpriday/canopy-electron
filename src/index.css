@@ -192,3 +192,33 @@ body,
   animation: activity-pulse 1s ease-in-out infinite;
   will-change: opacity, transform;
 }
+
+/* --- Electron Window Controls --- */
+
+/* The draggable area (Title Bar) */
+.app-drag-region {
+  -webkit-app-region: drag;
+  user-select: none; /* Vital: prevents text cursor from appearing while dragging */
+  cursor: default; /* Forces arrow cursor instead of text beam */
+}
+
+/* Non-draggable interactive elements (Buttons, Inputs) */
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Safety strip for resizing on Windows/Linux frameless windows.
+   This reserves the top 3px for the OS resize cursor so the drag
+   handler doesn't steal the mouse event at the very edge.
+*/
+.window-resize-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 50;
+  -webkit-app-region: no-drag;
+  pointer-events: auto; /* Allow OS to catch resize events */
+  cursor: ns-resize; /* Show vertical resize cursor */
+}

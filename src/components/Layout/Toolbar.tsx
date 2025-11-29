@@ -38,21 +38,31 @@ export function Toolbar({
   onToggleProblems,
 }: ToolbarProps) {
   return (
-    <header className="h-12 flex items-center px-4 border-b border-canopy-border bg-canopy-sidebar drag-region shrink-0">
-      {/* Space for traffic lights on macOS */}
+    <header className="relative h-12 flex items-center px-4 shrink-0 app-drag-region bg-canopy-sidebar border-b border-canopy-border shadow-sm">
+      {/* 1. RESIZE STRIP:
+        Invisible strip at the very top to allow resizing from the top edge on non-macOS systems
+      */}
+      <div className="window-resize-strip" />
+
+      {/* 2. TRAFFIC LIGHT SPACER (macOS):
+        Keeps content away from window controls.
+      */}
       <div className="w-20 shrink-0" />
 
-      {/* Agent launcher buttons */}
-      <div className="flex gap-2">
+      {/* 3. LEFT ACTIONS:
+        Wrapped in app-no-drag so they remain clickable
+      */}
+      <div className="flex gap-2 app-no-drag">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onLaunchAgent("claude")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Claude (Ctrl+Shift+C)"
+          aria-label="Launch Claude"
         >
           <Bot className="h-4 w-4" />
-          <span>Claude</span>
+          <span className="hidden lg:inline">Claude</span>
         </Button>
         <Button
           variant="ghost"
@@ -60,9 +70,10 @@ export function Toolbar({
           onClick={() => onLaunchAgent("gemini")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Gemini (Ctrl+Shift+G)"
+          aria-label="Launch Gemini"
         >
           <Sparkles className="h-4 w-4" />
-          <span>Gemini</span>
+          <span className="hidden lg:inline">Gemini</span>
         </Button>
         <Button
           variant="ghost"
@@ -70,9 +81,10 @@ export function Toolbar({
           onClick={() => onLaunchAgent("shell")}
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent"
           title="Launch Shell (Ctrl+T)"
+          aria-label="Launch Shell"
         >
           <Terminal className="h-4 w-4" />
-          <span>Shell</span>
+          <span className="hidden lg:inline">Shell</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -82,7 +94,7 @@ export function Toolbar({
               className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent h-8 w-8"
               aria-label="Add new terminal"
             >
-              <Plus className="h-4 w-4" aria-hidden="true" />
+              <Plus className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -112,14 +124,20 @@ export function Toolbar({
         <BulkActionsMenu />
       </div>
 
-      {/* Title - centered */}
-      <div className="flex-1 flex justify-center">
-        <span className="text-canopy-text font-semibold text-sm">Canopy Command Center</span>
+      {/* 4. CENTER TITLE (The "Grip" Area):
+        This flex-1 area expands to fill empty space. By NOT putting app-no-drag here,
+        this entire center section becomes the primary handle for moving the window.
+      */}
+      <div className="flex-1 flex justify-center items-center h-full opacity-70 hover:opacity-100 transition-opacity">
+        <span className="text-xs font-medium text-canopy-text tracking-wide select-none">
+          Canopy Command Center
+        </span>
       </div>
 
-      {/* Right side actions */}
-      <div className="flex gap-2">
-        {/* Problems button with error count badge */}
+      {/* 5. RIGHT ACTIONS:
+        Wrapped in app-no-drag so they remain clickable
+      */}
+      <div className="flex gap-2 app-no-drag">
         <Button
           variant="ghost"
           size="sm"
@@ -129,9 +147,9 @@ export function Toolbar({
             errorCount > 0 && "text-red-400"
           )}
           title="Problems (Ctrl+Shift+P)"
-          aria-label={`Problems: ${errorCount} errors`}
+          aria-label={`Problems: ${errorCount} error${errorCount !== 1 ? "s" : ""}`}
         >
-          <AlertCircle className="h-4 w-4" aria-hidden="true" />
+          <AlertCircle className="h-4 w-4" />
           {errorCount > 0 && <span className="ml-1 text-xs">{errorCount}</span>}
         </Button>
         <Button
@@ -141,7 +159,7 @@ export function Toolbar({
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent h-8 w-8"
           aria-label="Open settings"
         >
-          <Settings className="h-4 w-4" aria-hidden="true" />
+          <Settings className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
@@ -150,7 +168,7 @@ export function Toolbar({
           className="text-canopy-text hover:bg-canopy-border hover:text-canopy-accent h-8 w-8"
           aria-label="Refresh worktrees"
         >
-          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
     </header>
