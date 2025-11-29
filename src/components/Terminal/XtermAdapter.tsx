@@ -306,9 +306,7 @@ export function XtermAdapter({ terminalId, onReady, onExit, className }: XtermAd
           resizeFrameIdRef.current = requestAnimationFrame(performResize);
         } else {
           // Give up after max retries
-          console.warn(
-            `Terminal container has zero dimensions after ${MAX_ZERO_RETRIES} retries`
-          );
+          console.warn(`Terminal container has zero dimensions after ${MAX_ZERO_RETRIES} retries`);
           zeroRetryCountRef.current = 0;
           resizeFrameIdRef.current = null;
         }

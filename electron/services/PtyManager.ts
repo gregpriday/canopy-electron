@@ -407,7 +407,9 @@ export class PtyManager extends EventEmitter {
 
         // Optional: Log resize events when verbose logging enabled
         if (process.env.CANOPY_VERBOSE) {
-          console.log(`Resized terminal ${id} from ${currentCols}x${currentRows} to ${cols}x${rows}`);
+          console.log(
+            `Resized terminal ${id} from ${currentCols}x${currentRows} to ${cols}x${rows}`
+          );
         }
       } catch (error) {
         console.error(`Failed to resize terminal ${id}:`, error);
