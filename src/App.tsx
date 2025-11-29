@@ -278,16 +278,33 @@ function App() {
   // Handle error retry from problems panel
   const handleErrorRetry = useCallback(
     async (errorId: string, action: RetryAction, args?: Record<string, unknown>) => {
-      if (window.electron?.errors?.retry) {
-        try {
+      try {
+        // Handle injectContext retry locally
+        if (action === "injectContext") {
+          const worktreeId = args?.worktreeId as string | undefined;
+          const terminalId = args?.terminalId as string | undefined;
+          const selectedPaths = args?.selectedPaths as string[] | undefined;
+
+          if (!worktreeId || !terminalId) {
+            console.error("Missing worktreeId or terminalId for injectContext retry");
+            return;
+          }
+
+          // Retry the injection
+          await inject(worktreeId, terminalId, selectedPaths);
+
+          // Explicitly remove error on success (hook instance may differ)
+          removeError(errorId);
+        } else if (window.electron?.errors?.retry) {
+          // For other actions, delegate to the main process
           await window.electron.errors.retry(errorId, action, args);
           removeError(errorId);
-        } catch (error) {
-          console.error("Error retry failed:", error);
         }
+      } catch (error) {
+        console.error("Error retry failed:", error);
       }
     },
-    [removeError]
+    [inject, removeError]
   );
 
   // === Centralized Keybindings (via useKeybinding hook) ===

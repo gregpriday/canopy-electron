@@ -293,7 +293,13 @@ export interface EventFilterOptions {
 export type ErrorType = "git" | "process" | "filesystem" | "network" | "config" | "unknown";
 
 /** Action that can be retried after an error */
-export type RetryAction = "copytree" | "devserver" | "terminal" | "git" | "worktree";
+export type RetryAction =
+  | "copytree"
+  | "devserver"
+  | "terminal"
+  | "git"
+  | "worktree"
+  | "injectContext";
 
 /** Application error for UI display */
 export interface AppError {
