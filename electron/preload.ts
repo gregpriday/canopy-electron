@@ -324,7 +324,11 @@ export interface ElectronAPI {
   };
   copyTree: {
     generate(worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult>;
-    injectToTerminal(terminalId: string, worktreeId: string): Promise<CopyTreeResult>;
+    injectToTerminal(
+      terminalId: string,
+      worktreeId: string,
+      options?: CopyTreeOptions
+    ): Promise<CopyTreeResult>;
     isAvailable(): Promise<boolean>;
   };
   system: {
@@ -468,8 +472,12 @@ const api: ElectronAPI = {
     generate: (worktreeId: string, options?: CopyTreeOptions): Promise<CopyTreeResult> =>
       ipcRenderer.invoke(CHANNELS.COPYTREE_GENERATE, { worktreeId, options }),
 
-    injectToTerminal: (terminalId: string, worktreeId: string): Promise<CopyTreeResult> =>
-      ipcRenderer.invoke(CHANNELS.COPYTREE_INJECT, { terminalId, worktreeId }),
+    injectToTerminal: (
+      terminalId: string,
+      worktreeId: string,
+      options?: CopyTreeOptions
+    ): Promise<CopyTreeResult> =>
+      ipcRenderer.invoke(CHANNELS.COPYTREE_INJECT, { terminalId, worktreeId, options }),
 
     isAvailable: (): Promise<boolean> => ipcRenderer.invoke(CHANNELS.COPYTREE_AVAILABLE),
   },
