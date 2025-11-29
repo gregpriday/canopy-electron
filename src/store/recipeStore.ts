@@ -15,8 +15,15 @@ interface RecipeState {
 
   // CRUD operations
   loadRecipes: () => Promise<void>;
-  createRecipe: (name: string, worktreeId: string | undefined, terminals: RecipeTerminal[]) => Promise<void>;
-  updateRecipe: (id: string, updates: Partial<Omit<TerminalRecipe, "id" | "createdAt">>) => Promise<void>;
+  createRecipe: (
+    name: string,
+    worktreeId: string | undefined,
+    terminals: RecipeTerminal[]
+  ) => Promise<void>;
+  updateRecipe: (
+    id: string,
+    updates: Partial<Omit<TerminalRecipe, "id" | "createdAt">>
+  ) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
 
   // Query operations
@@ -221,11 +228,16 @@ const createRecipeStore: StateCreator<RecipeState> = (set, get) => ({
         // Validate command (if present): must be string, no newlines/control chars
         if (terminal.command !== undefined) {
           if (typeof terminal.command !== "string") return false;
+          // eslint-disable-next-line no-control-regex
           if (/[\r\n\x00-\x1F]/.test(terminal.command)) return false;
         }
         // Validate env (if present): must be object with string values
         if (terminal.env !== undefined) {
-          if (typeof terminal.env !== "object" || terminal.env === null || Array.isArray(terminal.env))
+          if (
+            typeof terminal.env !== "object" ||
+            terminal.env === null ||
+            Array.isArray(terminal.env)
+          )
             return false;
           for (const value of Object.values(terminal.env)) {
             if (typeof value !== "string") return false;

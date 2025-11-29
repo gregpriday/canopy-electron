@@ -164,7 +164,10 @@ export function RecipeEditor({ recipe, worktreeId, isOpen, onClose, onSave }: Re
         <div className="px-6 py-4 overflow-y-auto max-h-[calc(80vh-180px)]">
           {/* Recipe Name */}
           <div className="mb-4">
-            <label htmlFor="recipe-name" className="block text-sm font-medium text-canopy-text mb-1">
+            <label
+              htmlFor="recipe-name"
+              className="block text-sm font-medium text-canopy-text mb-1"
+            >
               Recipe Name
             </label>
             <input
@@ -190,11 +193,16 @@ export function RecipeEditor({ recipe, worktreeId, isOpen, onClose, onSave }: Re
 
             <div className="space-y-3">
               {terminals.map((terminal, index) => (
-                <div key={index} className="bg-canopy-background border border-canopy-border rounded-md p-3">
+                <div
+                  key={index}
+                  className="bg-canopy-background border border-canopy-border rounded-md p-3"
+                >
                   <div className="flex items-start gap-3">
                     {/* Terminal Type */}
                     <div className="flex-1">
-                      <label className="block text-xs font-medium text-canopy-text mb-1">Type</label>
+                      <label className="block text-xs font-medium text-canopy-text mb-1">
+                        Type
+                      </label>
                       <select
                         value={terminal.type}
                         onChange={(e) =>

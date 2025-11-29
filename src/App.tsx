@@ -33,7 +33,9 @@ function SidebarContent() {
 
   // Recipe editor state
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
-  const [recipeEditorWorktreeId, setRecipeEditorWorktreeId] = useState<string | undefined>(undefined);
+  const [recipeEditorWorktreeId, setRecipeEditorWorktreeId] = useState<string | undefined>(
+    undefined
+  );
 
   // Set first worktree as active by default
   useEffect(() => {
