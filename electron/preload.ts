@@ -24,6 +24,8 @@ const CHANNELS = {
   WORKTREE_SET_ACTIVE: "worktree:set-active",
   WORKTREE_UPDATE: "worktree:update",
   WORKTREE_REMOVE: "worktree:remove",
+  WORKTREE_CREATE: "worktree:create",
+  WORKTREE_LIST_BRANCHES: "worktree:list-branches",
 
   // Dev server channels
   DEVSERVER_START: "devserver:start",
@@ -268,6 +270,20 @@ interface CanopyConfig {
   };
 }
 
+interface BranchInfo {
+  name: string;
+  current: boolean;
+  commit: string;
+  remote?: string;
+}
+
+interface CreateWorktreeOptions {
+  baseBranch: string;
+  newBranch: string;
+  path: string;
+  fromRemote?: boolean;
+}
+
 interface TerminalState {
   id: string;
   type: "shell" | "claude" | "gemini" | "custom";
@@ -411,6 +427,8 @@ export interface ElectronAPI {
     getAll(): Promise<WorktreeState[]>;
     refresh(): Promise<void>;
     setActive(worktreeId: string): Promise<void>;
+    create(options: CreateWorktreeOptions, rootPath: string, worktrees: any[]): Promise<void>;
+    listBranches(rootPath: string): Promise<BranchInfo[]>;
     onUpdate(callback: (state: WorktreeState) => void): () => void;
     onRemove(callback: (data: { worktreeId: string }) => void): () => void;
   };
@@ -525,6 +543,12 @@ const api: ElectronAPI = {
 
     setActive: (worktreeId: string) =>
       ipcRenderer.invoke(CHANNELS.WORKTREE_SET_ACTIVE, { worktreeId }),
+
+    create: (options: CreateWorktreeOptions, rootPath: string) =>
+      ipcRenderer.invoke(CHANNELS.WORKTREE_CREATE, { rootPath, options }),
+
+    listBranches: (rootPath: string) =>
+      ipcRenderer.invoke(CHANNELS.WORKTREE_LIST_BRANCHES, { rootPath }),
 
     onUpdate: (callback: (state: WorktreeState) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, state: WorktreeState) => callback(state);

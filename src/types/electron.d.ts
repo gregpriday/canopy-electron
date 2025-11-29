@@ -238,11 +238,27 @@ interface AppError {
   retryArgs?: Record<string, unknown>;
 }
 
+export interface BranchInfo {
+  name: string;
+  current: boolean;
+  commit: string;
+  remote?: string;
+}
+
+export interface CreateWorktreeOptions {
+  baseBranch: string;
+  newBranch: string;
+  path: string;
+  fromRemote?: boolean;
+}
+
 export interface ElectronAPI {
   worktree: {
     getAll(): Promise<WorktreeState[]>;
     refresh(): Promise<void>;
     setActive(worktreeId: string): Promise<void>;
+    create(options: CreateWorktreeOptions, rootPath: string): Promise<void>;
+    listBranches(rootPath: string): Promise<BranchInfo[]>;
     onUpdate(callback: (state: WorktreeState) => void): () => void;
     onRemove(callback: (data: { worktreeId: string }) => void): () => void;
   };
