@@ -217,10 +217,25 @@ export function NewWorktreeDialog({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      // TODO: Implement file picker dialog
+                    onClick={async () => {
+                      if (!window.electron?.directory?.openDialog) {
+                        setError("Directory picker is not available");
+                        return;
+                      }
+                      try {
+                        const selected = await window.electron.directory.openDialog();
+                        if (selected) {
+                          setWorktreePath(selected);
+                          setError(null); // Clear any previous errors
+                        }
+                      } catch (err: any) {
+                        console.error("Failed to open directory picker:", err);
+                        setError(
+                          `Failed to open directory picker: ${err.message || "Unknown error"}`
+                        );
+                      }
                     }}
-                    disabled={creating}
+                    disabled={creating || !window.electron?.directory?.openDialog}
                   >
                     <FolderOpen className="w-4 h-4" />
                   </Button>
