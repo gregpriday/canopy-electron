@@ -82,7 +82,10 @@ export function ProjectRunners({ projectId }: ProjectRunnersProps) {
       </button>
 
       {isExpanded && (
-        <div id="runners-panel" className="p-2 grid grid-cols-1 gap-1 max-h-[200px] overflow-y-auto">
+        <div
+          id="runners-panel"
+          className="p-2 grid grid-cols-1 gap-1 max-h-[200px] overflow-y-auto"
+        >
           {allCommands.map((cmd) => (
             <button
               key={cmd.id}
