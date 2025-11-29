@@ -1,0 +1,107 @@
+# CopyTree Ignore File
+# Similar to .gitignore, this file excludes non-essential files from context generation
+
+# Build outputs and artifacts
+dist/
+dist-electron/
+out/
+release/
+*.asar
+build/icon.iconset/
+
+# Dependencies
+node_modules/
+
+# Lock files (not needed for context understanding)
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test files (can be excluded when focusing on implementation)
+**/__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Demo and example files
+*.demo.*
+*.example.*
+App.demo.tsx
+
+# Configuration files (usually not needed for code context)
+.prettierignore
+prettier.config.js
+eslint.config.js
+vitest.config.ts
+components.json
+
+# Type definition outputs (generated files)
+*.d.ts
+!src/types/*.d.ts
+!electron/types/*.d.ts
+!shared/types/*.d.ts
+
+# Re-export index files (minimal value, just re-exports)
+**/index.ts
+!src/index.ts
+!electron/index.ts
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment files (may contain secrets)
+.env
+.env.*
+!.env.example
+
+# Cache files
+.cache/
+*.tsbuildinfo
+.eslintcache
+.prettiercache
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Build resources (icons are binary, not useful for context)
+build/icon.icns
+build/icon.ico
+build/icon.png
+build/icon-source.png
+
+# Agent instruction files (already in CLAUDE.md and docs/)
+AGENTS.md
+GEMINI.md
