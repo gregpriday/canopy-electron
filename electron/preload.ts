@@ -22,6 +22,7 @@ import type {
   DevServerState,
   Project,
   ProjectSettings,
+  RunCommand,
   TerminalSpawnOptions,
   CopyTreeOptions,
   CopyTreeResult,
@@ -143,6 +144,7 @@ const CHANNELS = {
   PROJECT_ON_SWITCH: "project:on-switch",
   PROJECT_GET_SETTINGS: "project:get-settings",
   PROJECT_SAVE_SETTINGS: "project:save-settings",
+  PROJECT_DETECT_RUNNERS: "project:detect-runners",
 
   // History channels (agent transcripts & artifacts)
   HISTORY_GET_SESSIONS: "history:get-sessions",
@@ -448,6 +450,9 @@ const api: ElectronAPI = {
 
     saveSettings: (projectId: string, settings: ProjectSettings): Promise<void> =>
       ipcRenderer.invoke(CHANNELS.PROJECT_SAVE_SETTINGS, { projectId, settings }),
+
+    detectRunners: (projectId: string): Promise<RunCommand[]> =>
+      ipcRenderer.invoke(CHANNELS.PROJECT_DETECT_RUNNERS, projectId),
   },
 
   // ==========================================

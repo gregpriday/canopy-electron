@@ -3,21 +3,26 @@
  *
  * Provides project settings management via IPC.
  * Loads settings when project changes and provides save functionality.
+ * Also fetches auto-detected run commands from project configuration files.
  */
 
 import { useState, useEffect, useCallback } from "react";
-import type { ProjectSettings } from "../types";
+import type { ProjectSettings, RunCommand } from "../types";
 import { useProjectStore } from "../store/projectStore";
 
 interface UseProjectSettingsReturn {
   /** Current project settings (null while loading) */
   settings: ProjectSettings | null;
+  /** Auto-detected run commands from project files (filtered to exclude already-saved) */
+  detectedRunners: RunCommand[];
   /** Whether settings are currently loading */
   isLoading: boolean;
   /** Error message if loading/saving failed */
   error: string | null;
   /** Save updated settings */
   saveSettings: (settings: ProjectSettings) => Promise<void>;
+  /** Promote a detected command to saved commands */
+  promoteToSaved: (command: RunCommand) => Promise<void>;
   /** Refresh settings from disk */
   refresh: () => Promise<void>;
 }
@@ -52,12 +57,14 @@ export function useProjectSettings(projectId?: string): UseProjectSettingsReturn
   const targetId = projectId || currentProject?.id;
 
   const [settings, setSettings] = useState<ProjectSettings | null>(null);
+  const [detectedRunners, setDetectedRunners] = useState<RunCommand[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSettings = useCallback(async () => {
     if (!targetId) {
       setSettings({ runCommands: [] });
+      setDetectedRunners([]);
       return;
     }
 
@@ -66,10 +73,20 @@ export function useProjectSettings(projectId?: string): UseProjectSettingsReturn
 
     const currentProjectId = targetId;
     try {
-      const data = await window.electron.project.getSettings(currentProjectId);
+      // Fetch saved settings and detected runners in parallel
+      const [data, detected] = await Promise.all([
+        window.electron.project.getSettings(currentProjectId),
+        window.electron.project.detectRunners(currentProjectId),
+      ]);
+
       // Only update state if this is still the active project
       if (currentProjectId === targetId) {
         setSettings(data);
+
+        // Filter out detected commands that are already saved (by command string)
+        const savedCommandStrings = new Set(data.runCommands?.map((c) => c.command) || []);
+        const newDetected = detected.filter((d) => !savedCommandStrings.has(d.command));
+        setDetectedRunners(newDetected);
       }
     } catch (err) {
       console.error("Failed to load project settings:", err);
@@ -77,6 +94,7 @@ export function useProjectSettings(projectId?: string): UseProjectSettingsReturn
       if (currentProjectId === targetId) {
         setError(err instanceof Error ? err.message : "Unknown error");
         setSettings({ runCommands: [] });
+        setDetectedRunners([]);
       }
     } finally {
       // Only clear loading if this is still the active project
@@ -96,6 +114,11 @@ export function useProjectSettings(projectId?: string): UseProjectSettingsReturn
       try {
         await window.electron.project.saveSettings(targetId, newSettings);
         setSettings(newSettings);
+
+        // Re-filter detected commands after save
+        const savedCommandStrings = new Set(newSettings.runCommands?.map((c) => c.command) || []);
+        setDetectedRunners((prev) => prev.filter((d) => !savedCommandStrings.has(d.command)));
+
         setError(null);
       } catch (err) {
         console.error("Failed to save project settings:", err);
@@ -106,15 +129,51 @@ export function useProjectSettings(projectId?: string): UseProjectSettingsReturn
     [targetId]
   );
 
+  const promoteToSaved = useCallback(
+    async (command: RunCommand) => {
+      if (!settings || !targetId) return;
+
+      // Use functional update to avoid race conditions with concurrent promotions
+      const currentSettings = settings;
+      const updated = [...currentSettings.runCommands, command];
+
+      try {
+        await window.electron.project.saveSettings(targetId, {
+          ...currentSettings,
+          runCommands: updated,
+        });
+
+        // Update local state after successful save
+        setSettings({
+          ...currentSettings,
+          runCommands: updated,
+        });
+
+        // Re-filter detected commands
+        const savedCommandStrings = new Set(updated.map((c) => c.command));
+        setDetectedRunners((prev) => prev.filter((d) => !savedCommandStrings.has(d.command)));
+
+        setError(null);
+      } catch (err) {
+        console.error("Failed to promote command:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+        throw err;
+      }
+    },
+    [settings, targetId]
+  );
+
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
   return {
     settings,
+    detectedRunners,
     isLoading,
     error,
     saveSettings,
+    promoteToSaved,
     refresh: fetchSettings,
   };
 }

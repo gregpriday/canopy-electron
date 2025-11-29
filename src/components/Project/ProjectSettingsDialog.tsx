@@ -2,10 +2,12 @@
  * Project Settings Dialog Component
  *
  * Modal UI for editing project-level settings including run commands.
+ * Shows auto-detected commands from project configuration files (package.json, Makefile, etc.)
+ * with the ability to promote them to saved commands.
  */
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProjectSettings } from "@/hooks/useProjectSettings";
 import type { RunCommand } from "@/types";
@@ -18,10 +20,12 @@ interface ProjectSettingsDialogProps {
 }
 
 export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSettingsDialogProps) {
-  const { settings, saveSettings, isLoading, error } = useProjectSettings(projectId);
+  const { settings, detectedRunners, saveSettings, promoteToSaved, isLoading, error } =
+    useProjectSettings(projectId);
   const [commands, setCommands] = useState<RunCommand[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [promotingIds, setPromotingIds] = useState<Set<string>>(new Set());
 
   // Sync local state when settings load OR when dialog opens (reset unsaved changes)
   useEffect(() => {
@@ -104,61 +108,134 @@ export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSet
             </div>
           )}
           {!isLoading && !error && (
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-canopy-text/80 mb-2">Run Commands</h3>
-              <p className="text-xs text-gray-500 mb-4">
-                Configure quick commands to run in terminals. These will appear as buttons in the
-                sidebar.
-              </p>
-              <div className="space-y-2">
-                {commands.map((cmd) => (
-                  <div key={cmd.id} className="flex gap-2 items-center">
-                    <input
-                      className={cn(
-                        "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text w-1/3",
-                        "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
-                      )}
-                      value={cmd.name}
-                      onChange={(e) => handleChange(cmd.id, "name", e.target.value)}
-                      placeholder="Name (e.g. Dev Server)"
-                    />
-                    <input
-                      className={cn(
-                        "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text flex-1 font-mono",
-                        "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
-                      )}
-                      value={cmd.command}
-                      onChange={(e) => handleChange(cmd.id, "command", e.target.value)}
-                      placeholder="Command (e.g. npm run dev)"
-                    />
-                    <Button
-                      onClick={() => handleRemove(cmd.id)}
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8"
-                      title="Remove command"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+            <>
+              {/* Saved Commands Section */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-canopy-text/80 mb-2">Run Commands</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Configure quick commands to run in terminals. These will appear as buttons in the
+                  sidebar.
+                </p>
+                <div className="space-y-2">
+                  {commands.map((cmd) => (
+                    <div key={cmd.id} className="flex gap-2 items-center">
+                      <input
+                        className={cn(
+                          "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text w-1/3",
+                          "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
+                        )}
+                        value={cmd.name}
+                        onChange={(e) => handleChange(cmd.id, "name", e.target.value)}
+                        placeholder="Name (e.g. Dev Server)"
+                      />
+                      <input
+                        className={cn(
+                          "bg-canopy-bg border border-canopy-border rounded px-2 py-1.5 text-sm text-canopy-text flex-1 font-mono",
+                          "focus:outline-none focus:border-canopy-accent focus:ring-1 focus:ring-canopy-accent/30"
+                        )}
+                        value={cmd.command}
+                        onChange={(e) => handleChange(cmd.id, "command", e.target.value)}
+                        placeholder="Command (e.g. npm run dev)"
+                      />
+                      <Button
+                        onClick={() => handleRemove(cmd.id)}
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8"
+                        title="Remove command"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
 
-                {commands.length === 0 && (
-                  <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-canopy-border rounded">
-                    No run commands configured
-                  </div>
-                )}
+                  {commands.length === 0 && (
+                    <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-canopy-border rounded">
+                      No run commands configured
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleAddCommand}
+                  variant="outline"
+                  className="mt-3 w-full border-dashed border-canopy-border text-gray-400 hover:text-canopy-text hover:border-canopy-accent/50"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Command
+                </Button>
               </div>
 
-              <Button
-                onClick={handleAddCommand}
-                variant="outline"
-                className="mt-3 w-full border-dashed border-canopy-border text-gray-400 hover:text-canopy-text hover:border-canopy-accent/50"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Command
-              </Button>
-            </div>
+              {/* Suggested Commands Section */}
+              {detectedRunners.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-canopy-text/80 mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-yellow-400" />
+                    Suggested Commands
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-3">
+                    These commands were detected from your project files. Click + to add them to
+                    your saved commands.
+                  </p>
+                  <div className="space-y-1.5">
+                    {detectedRunners.map((cmd) => (
+                      <div
+                        key={cmd.id}
+                        className="flex items-center gap-2 p-2 rounded bg-canopy-bg/50 border border-canopy-border/50 hover:border-canopy-border transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-canopy-text truncate">
+                              {cmd.name}
+                            </span>
+                            {cmd.icon && (
+                              <span className="text-xs text-gray-500 px-1.5 py-0.5 bg-canopy-border/30 rounded">
+                                {cmd.icon}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono truncate">
+                            {cmd.command}
+                          </div>
+                          {cmd.description && (
+                            <div className="text-xs text-gray-600 truncate mt-0.5">
+                              {cmd.description}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          onClick={async () => {
+                            setPromotingIds((prev) => new Set(prev).add(cmd.id));
+                            setSaveError(null);
+                            try {
+                              await promoteToSaved(cmd);
+                              // Command will be removed from detectedRunners by the hook
+                            } catch (err) {
+                              const errorMsg =
+                                err instanceof Error ? err.message : "Failed to add command";
+                              setSaveError(errorMsg);
+                            } finally {
+                              setPromotingIds((prev) => {
+                                const next = new Set(prev);
+                                next.delete(cmd.id);
+                                return next;
+                              });
+                            }
+                          }}
+                          variant="ghost"
+                          size="icon"
+                          disabled={promotingIds.has(cmd.id)}
+                          className="text-green-400 hover:text-green-300 hover:bg-green-900/20 h-8 w-8 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Add to saved commands"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

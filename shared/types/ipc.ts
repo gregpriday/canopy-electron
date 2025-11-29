@@ -11,6 +11,7 @@ import type {
   WorktreeState,
   Project,
   ProjectSettings,
+  RunCommand,
 } from "./domain.js";
 
 // ============================================================================
@@ -552,6 +553,7 @@ export interface ElectronAPI {
     onSwitch(callback: (project: Project) => void): () => void;
     getSettings(projectId: string): Promise<ProjectSettings>;
     saveSettings(projectId: string, settings: ProjectSettings): Promise<void>;
+    detectRunners(projectId: string): Promise<RunCommand[]>;
   };
   history: {
     getSessions(filters?: HistoryGetSessionsPayload): Promise<AgentSession[]>;
