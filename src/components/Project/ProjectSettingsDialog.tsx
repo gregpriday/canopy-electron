@@ -211,7 +211,8 @@ export function ProjectSettingsDialog({ projectId, isOpen, onClose }: ProjectSet
                               await promoteToSaved(cmd);
                               // Command will be removed from detectedRunners by the hook
                             } catch (err) {
-                              const errorMsg = err instanceof Error ? err.message : "Failed to add command";
+                              const errorMsg =
+                                err instanceof Error ? err.message : "Failed to add command";
                               setSaveError(errorMsg);
                             } finally {
                               setPromotingIds((prev) => {
