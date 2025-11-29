@@ -39,6 +39,7 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
   const { inject, isInjecting } = useContextInjection();
   const { activeWorktreeId, focusedWorktreeId, selectWorktree, setActiveWorktree } =
     useWorktreeSelectionStore();
+  const addError = useErrorStore((state) => state.addError);
   const focusedTerminalId = useTerminalStore((state) => state.focusedId);
 
   // Recipe editor state
@@ -57,10 +58,96 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
     }
   }, [worktrees, activeWorktreeId, setActiveWorktree]);
 
-  const handleCopyTree = useCallback((worktree: WorktreeState) => {
-    // Use copytree directly to clipboard (future enhancement)
-    console.log("Copy tree for worktree:", worktree.path);
-  }, []);
+  const handleCopyTree = useCallback(
+    async (worktree: WorktreeState) => {
+      try {
+        // Check if CopyTree is available
+        const isAvailable = await window.electron.copyTree.isAvailable();
+        if (!isAvailable) {
+          throw new Error(
+            "CopyTree SDK not available. Please restart the application or check installation."
+          );
+        }
+
+        // Generate context using CopyTree SDK
+        // Use XML format by default (safe for most use cases)
+        const result = await window.electron.copyTree.generate(worktree.id, {
+          format: "xml",
+        });
+
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        // Validate result has content
+        if (result.fileCount === 0 || !result.content || result.content.trim().length === 0) {
+          throw new Error(
+            "No files to copy. The worktree may be empty or all files were filtered out."
+          );
+        }
+
+        // Copy generated content to clipboard
+        if (!navigator.clipboard) {
+          throw new Error("Clipboard API not available in this browser");
+        }
+
+        try {
+          await navigator.clipboard.writeText(result.content);
+        } catch (clipboardError) {
+          // Handle clipboard-specific errors
+          if (clipboardError instanceof DOMException) {
+            if (clipboardError.name === "NotAllowedError") {
+              throw new Error(
+                "Clipboard access denied. Please grant clipboard permissions to this application."
+              );
+            } else if (clipboardError.name === "SecurityError") {
+              throw new Error(
+                "Clipboard access blocked due to security restrictions. Try using the application in a secure context."
+              );
+            }
+          }
+          throw clipboardError;
+        }
+
+        // Log success
+        console.log(`Copied ${result.fileCount} files of context to clipboard`);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Failed to copy context to clipboard";
+        const details = e instanceof Error ? e.stack : undefined;
+
+        // Determine error type based on message content
+        let errorType: "config" | "process" | "filesystem" = "process";
+        if (message.includes("not available") || message.includes("not installed")) {
+          errorType = "config";
+        } else if (
+          message.includes("permission") ||
+          message.includes("EACCES") ||
+          message.includes("denied")
+        ) {
+          errorType = "filesystem";
+        }
+
+        // Add to global error store for Problems panel visibility
+        addError({
+          type: errorType,
+          message: `Copy context failed: ${message}`,
+          details,
+          source: "WorktreeCard",
+          context: {
+            worktreeId: worktree.id,
+          },
+          isTransient: true,
+          retryAction: "copytree",
+          retryArgs: {
+            worktreeId: worktree.id,
+          },
+        });
+
+        console.error("Failed to copy context:", message);
+      }
+    },
+    [addError]
+  );
 
   const handleOpenEditor = useCallback((worktree: WorktreeState) => {
     window.electron?.system?.openPath(worktree.path);
