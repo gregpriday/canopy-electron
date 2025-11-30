@@ -9,7 +9,7 @@ interface AppLayoutProps {
   children?: ReactNode;
   sidebarContent?: ReactNode;
   historyContent?: ReactNode;
-  onLaunchAgent?: (type: "claude" | "gemini" | "shell") => void;
+  onLaunchAgent?: (type: "claude" | "gemini" | "codex" | "shell") => void;
   onRefresh?: () => void;
   onSettings?: () => void;
   /** Number of active errors to show in toolbar */
@@ -170,7 +170,7 @@ export function AppLayout({
   }, []);
 
   const handleLaunchAgent = useCallback(
-    (type: "claude" | "gemini" | "shell") => {
+    (type: "claude" | "gemini" | "codex" | "shell") => {
       onLaunchAgent?.(type);
     },
     [onLaunchAgent]
