@@ -10,7 +10,12 @@
  */
 
 import type { StateCreator } from "zustand";
-import type { TerminalInstance as TerminalInstanceType, AgentState, TerminalType } from "@/types";
+import type {
+  TerminalInstance as TerminalInstanceType,
+  AgentState,
+  TerminalType,
+  AgentStateChangeTrigger,
+} from "@/types";
 
 // Re-export the shared type
 export type TerminalInstance = TerminalInstanceType;
@@ -43,7 +48,9 @@ export interface TerminalRegistrySlice {
     id: string,
     agentState: AgentState,
     error?: string,
-    lastStateChange?: number
+    lastStateChange?: number,
+    trigger?: AgentStateChangeTrigger,
+    confidence?: number
   ) => void;
   getTerminal: (id: string) => TerminalInstance | undefined;
 }
@@ -165,7 +172,7 @@ export const createTerminalRegistrySlice =
       });
     },
 
-    updateAgentState: (id, agentState, error, lastStateChange) => {
+    updateAgentState: (id, agentState, error, lastStateChange, trigger, confidence) => {
       set((state) => {
         const terminal = state.terminals.find((t) => t.id === id);
         if (!terminal) {
@@ -180,6 +187,8 @@ export const createTerminalRegistrySlice =
                 agentState,
                 error,
                 lastStateChange: lastStateChange ?? Date.now(),
+                stateChangeTrigger: trigger,
+                stateChangeConfidence: confidence,
               }
             : t
         );

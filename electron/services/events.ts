@@ -347,7 +347,20 @@ export type WithBase<T> = T & BaseEventPayload;
  * Use for events that require correlation context (worktreeId, agentId, etc.).
  * Note: Since BaseEventPayload now extends EventContext, this is equivalent to WithBase<T>.
  */
+<<<<<<< HEAD
 export type WithContext<T> = T & BaseEventPayload;
+=======
+export type WithContext<T> = T &
+  BaseEventPayload & {
+    worktreeId?: string;
+    agentId?: string;
+    taskId?: string;
+    runId?: string;
+    terminalId?: string;
+    issueNumber?: number;
+    prNumber?: number;
+  };
+>>>>>>> feature/issue-196-state-change-metadata
 
 // ============================================================================
 // Event Type Unions by Category
@@ -373,6 +386,25 @@ export interface ModalContextMap {
   worktree: undefined;
   "command-palette": undefined;
 }
+
+/**
+ * Trigger types for agent state changes.
+ * Indicates what caused an agent's state to change.
+ *
+ * - `input`: User sent input to terminal (deterministic, confidence 1.0)
+ * - `output`: PTY emitted output (deterministic, confidence 1.0)
+ * - `heuristic`: Pattern matching detected prompt/busy (confidence 0.7-0.9)
+ * - `ai-classification`: AI model classified state (confidence 0.8-0.95)
+ * - `timeout`: Silence timeout triggered check (confidence varies)
+ * - `exit`: Process exited (deterministic, confidence 1.0)
+ */
+export type AgentStateChangeTrigger =
+  | "input"
+  | "output"
+  | "heuristic"
+  | "ai-classification"
+  | "timeout"
+  | "exit";
 
 /**
  * Base event payload with optional trace correlation ID and event context.
@@ -500,11 +532,11 @@ export type CanopyEventMap = {
   "agent:state-changed": WithContext<{
     agentId: string;
     state: AgentState;
-    previousState?: AgentState;
-    /** EventContext: ID of the terminal where the agent is running */
-    terminalId?: string;
-    /** EventContext: Associated worktree ID */
-    worktreeId?: string;
+    previousState: AgentState;
+    /** What caused this state change */
+    trigger: AgentStateChangeTrigger;
+    /** Confidence in the state detection (0.0 = uncertain, 1.0 = certain) */
+    confidence: number;
   }>;
 
   /**

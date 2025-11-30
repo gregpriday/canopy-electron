@@ -41,6 +41,18 @@ export const EventContextSchema = z.object({
 });
 
 /**
+ * Valid triggers for agent state changes.
+ */
+export const AgentStateChangeTriggerSchema = z.enum([
+  "input",
+  "output",
+  "heuristic",
+  "ai-classification",
+  "timeout",
+  "exit",
+]);
+
+/**
  * Schema for agent spawned event payload.
  * Emitted when a new agent terminal is created.
  */
@@ -60,9 +72,13 @@ export const AgentSpawnedSchema = EventContextSchema.extend({
 export const AgentStateChangedSchema = EventContextSchema.extend({
   agentId: z.string().min(1),
   state: AgentStateSchema,
-  previousState: AgentStateSchema.optional(),
+  previousState: AgentStateSchema,
   timestamp: z.number().int().positive(),
   traceId: z.string().optional(),
+  /** What caused this state change */
+  trigger: AgentStateChangeTriggerSchema,
+  /** Confidence in the state detection (0.0 = uncertain, 1.0 = certain) */
+  confidence: z.number().min(0).max(1),
 });
 
 /**
@@ -130,6 +146,7 @@ export const AgentEventPayloadSchema = z.union([
 export type EventContext = z.infer<typeof EventContextSchema>;
 export type AgentSpawned = z.infer<typeof AgentSpawnedSchema>;
 export type AgentStateChanged = z.infer<typeof AgentStateChangedSchema>;
+export type AgentStateChangeTrigger = z.infer<typeof AgentStateChangeTriggerSchema>;
 export type AgentOutput = z.infer<typeof AgentOutputSchema>;
 export type AgentCompleted = z.infer<typeof AgentCompletedSchema>;
 export type AgentFailed = z.infer<typeof AgentFailedSchema>;
