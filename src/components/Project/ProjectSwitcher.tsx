@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronsUpDown, Plus, Check } from "lucide-react";
+import { ChevronsUpDown, Plus, Check, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getProjectGradient } from "@/lib/colorUtils";
 import { useProjectStore } from "@/store/projectStore";
@@ -22,9 +22,21 @@ export function ProjectSwitcher() {
     getCurrentProject,
     switchProject,
     addProject,
+    regenerateIdentity,
   } = useProjectStore();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+
+  const handleRegenerate = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    setRegeneratingId(projectId);
+    try {
+      await regenerateIdentity(projectId);
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -66,7 +78,7 @@ export function ProjectSwitcher() {
                 <DropdownMenuItem
                   key={project.id}
                   onClick={() => switchProject(project.id)}
-                  className="gap-2 p-2"
+                  className="gap-2 p-2 group"
                 >
                   <div
                     className="flex h-6 w-6 items-center justify-center rounded-md border border-canopy-border"
@@ -80,6 +92,21 @@ export function ProjectSwitcher() {
                     <span className="text-sm">{project.emoji || "🌲"}</span>
                   </div>
                   <span className="flex-1 truncate">{project.name}</span>
+                  {project.isFallbackIdentity && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => handleRegenerate(e, project.id)}
+                      disabled={regeneratingId === project.id}
+                    >
+                      {regeneratingId === project.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3 text-canopy-accent" />
+                      )}
+                    </Button>
+                  )}
                 </DropdownMenuItem>
               ))}
 
@@ -161,7 +188,10 @@ export function ProjectSwitcher() {
                 }
               }}
               disabled={isLoading}
-              className={cn("gap-2 p-2", project.id === currentProject.id && "bg-canopy-border/30")}
+              className={cn(
+                "gap-2 p-2 group",
+                project.id === currentProject.id && "bg-canopy-border/30"
+              )}
             >
               <div
                 className="flex h-6 w-6 items-center justify-center rounded-md border border-canopy-border"
@@ -175,6 +205,21 @@ export function ProjectSwitcher() {
                 <span className="text-sm">{project.emoji || "🌲"}</span>
               </div>
               <span className="flex-1 truncate">{project.name}</span>
+              {project.isFallbackIdentity && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => handleRegenerate(e, project.id)}
+                  disabled={regeneratingId === project.id}
+                >
+                  {regeneratingId === project.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3 text-canopy-accent" />
+                  )}
+                </Button>
+              )}
               {currentProject.id === project.id && <Check className="h-4 w-4 text-canopy-accent" />}
             </DropdownMenuItem>
           ))}

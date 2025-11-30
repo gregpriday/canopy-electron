@@ -85,8 +85,8 @@ class CopyTreeService {
         // Filtering
         // If includePaths is provided, use it as the filter (replaces any existing filter)
         // Otherwise, use the filter option as-is
-        filter: options.includePaths || options.filter,
-        exclude: options.exclude,
+        filter: options.includePaths || options.filter || undefined,
+        exclude: options.exclude || undefined,
         always: options.always,
 
         // Git

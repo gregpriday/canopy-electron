@@ -338,6 +338,11 @@ export interface Project {
   lastOpened: number;
   /** Theme color/gradient (optional) */
   color?: string;
+  /**
+   * If true, indicates the current name/emoji are defaults (folder name + tree)
+   * and should be auto-regenerated or flagged in the UI.
+   */
+  isFallbackIdentity?: boolean;
 }
 
 /** Terminal snapshot for state preservation */

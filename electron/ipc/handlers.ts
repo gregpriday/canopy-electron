@@ -1466,6 +1466,7 @@ export function registerIpcHandlers(
       // Also update display name/emoji with AI suggestions
       name: identity.title,
       emoji: identity.emoji,
+      isFallbackIdentity: false,
     };
 
     return projectStore.updateProject(projectId, updates);

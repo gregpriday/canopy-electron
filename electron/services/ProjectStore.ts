@@ -115,6 +115,7 @@ export class ProjectStore {
       aiGeneratedEmoji: identity?.emoji,
       color: identity?.color,
       lastOpened: Date.now(),
+      isFallbackIdentity: !identity,
     };
 
     const projects = this.getAllProjects();
@@ -169,6 +170,12 @@ export class ProjectStore {
     const safeUpdates: Partial<Project> = {};
     if (updates.name !== undefined) safeUpdates.name = updates.name;
     if (updates.emoji !== undefined) safeUpdates.emoji = updates.emoji;
+
+    // If name or emoji is manually updated, clear the fallback flag
+    if (updates.name !== undefined || updates.emoji !== undefined) {
+      safeUpdates.isFallbackIdentity = false;
+    }
+    
     if (updates.color !== undefined) safeUpdates.color = updates.color;
     if (updates.aiGeneratedName !== undefined)
       safeUpdates.aiGeneratedName = updates.aiGeneratedName;

@@ -16,6 +16,7 @@ interface Project {
   aiGeneratedEmoji?: string;
   lastOpened: number;
   color?: string;
+  isFallbackIdentity?: boolean;
 }
 
 interface ProjectState {

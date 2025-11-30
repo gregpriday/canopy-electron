@@ -78,9 +78,9 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
           );
         }
 
-        // Generate context using CopyTree SDK
-        // Use XML format by default (safe for most use cases)
-        const result = await window.electron.copyTree.generate(worktree.id, {
+        // CHANGE: Use generateAndCopyFile instead of generate
+        // This handles the file creation and OS-level clipboard reference (copytree -r behavior)
+        const result = await window.electron.copyTree.generateAndCopyFile(worktree.id, {
           format: "xml",
         });
 
@@ -88,38 +88,8 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
           throw new Error(result.error);
         }
 
-        // Validate result has content
-        if (result.fileCount === 0 || !result.content || result.content.trim().length === 0) {
-          throw new Error(
-            "No files to copy. The worktree may be empty or all files were filtered out."
-          );
-        }
-
-        // Copy generated content to clipboard
-        if (!navigator.clipboard) {
-          throw new Error("Clipboard API not available in this browser");
-        }
-
-        try {
-          await navigator.clipboard.writeText(result.content);
-        } catch (clipboardError) {
-          // Handle clipboard-specific errors
-          if (clipboardError instanceof DOMException) {
-            if (clipboardError.name === "NotAllowedError") {
-              throw new Error(
-                "Clipboard access denied. Please grant clipboard permissions to this application."
-              );
-            } else if (clipboardError.name === "SecurityError") {
-              throw new Error(
-                "Clipboard access blocked due to security restrictions. Try using the application in a secure context."
-              );
-            }
-          }
-          throw clipboardError;
-        }
-
         // Log success
-        console.log(`Copied ${result.fileCount} files of context to clipboard`);
+        console.log(`Copied ${result.fileCount} files as file reference`);
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to copy context to clipboard";
         const details = e instanceof Error ? e.stack : undefined;
