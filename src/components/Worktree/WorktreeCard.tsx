@@ -1,7 +1,6 @@
 import { useCallback, useState, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import type { WorktreeState } from "../../types";
-import { ActivityLight } from "./ActivityLight";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
 import { FileChangeList } from "./FileChangeList";
 import { ErrorBanner } from "../Errors/ErrorBanner";
@@ -384,7 +383,6 @@ export function WorktreeCard({
           {/* Left: identity + status */}
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 text-xs font-mono leading-none mb-1">
-              <ActivityLight timestamp={worktree.lastActivityTimestamp} />
               <AgentStatusIndicator state={dominantAgentState} />
               {isActive && (
                 <span
