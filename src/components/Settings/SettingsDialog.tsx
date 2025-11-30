@@ -116,7 +116,8 @@ export function SettingsDialog({ isOpen, onClose, defaultTab }: SettingsDialogPr
     if (isOpen && defaultTab && defaultTab !== activeTab) {
       setActiveTab(defaultTab);
     }
-  }, [isOpen, defaultTab, activeTab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultTab]);
 
   // Load app version on mount
   useEffect(() => {
