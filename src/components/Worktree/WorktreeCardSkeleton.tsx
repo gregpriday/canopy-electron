@@ -8,7 +8,7 @@ import { cn } from "../../lib/utils";
  * for the action buttons, branch name, path, and summary sections.
  *
  * Features:
- * - Matches WorktreeCard visual structure (buttons row, branch, path, summary, terminal badge)
+ * - Matches WorktreeCard visual structure (compact header, meta rows)
  * - Subtle pulse animation using Tailwind's animate-pulse
  * - Respects prefers-reduced-motion media query
  * - Uses theme colors for consistent appearance
@@ -20,8 +20,8 @@ export function WorktreeCardSkeleton() {
   return (
     <div
       className={cn(
-        "border-2 rounded-lg p-3 mb-3",
-        "border-border/50 bg-card/40",
+        "border rounded-lg p-3 mb-2",
+        "border-border/50 bg-card/30",
         "motion-safe:animate-pulse motion-reduce:animate-none"
       )}
       role="status"
@@ -31,40 +31,49 @@ export function WorktreeCardSkeleton() {
     >
       <span className="sr-only">Loading worktree</span>
 
-      {/* Action buttons row - more buttons to match real cards */}
-      <div className="flex gap-2 mb-3 border-b border-gray-700 pb-2" aria-hidden="true">
-        <div className="h-6 w-12 bg-muted/50 rounded" />
-        <div className="h-6 w-16 bg-muted/50 rounded" />
-        <div className="h-6 w-12 bg-muted/50 rounded" />
-        <div className="h-6 w-14 bg-muted/50 rounded" />
-        <div className="h-6 w-20 bg-muted/50 rounded" />
+      {/* Header: Status + Branch + Path + Action placeholers */}
+      <div className="mb-3 flex items-start justify-between gap-2" aria-hidden="true">
+        <div className="flex flex-col gap-1.5 w-3/4">
+            <div className="flex items-center gap-2">
+                {/* Status dots */}
+                <div className="h-3 w-3 bg-muted/50 rounded-full" />
+                <div className="h-3 w-3 bg-muted/50 rounded-full" />
+                {/* Branch name */}
+                <div className="h-4 w-32 bg-muted/50 rounded" />
+            </div>
+             {/* Path */}
+            <div className="h-3 w-48 bg-muted/50 rounded" />
+        </div>
+         {/* Action buttons placeholder */}
+        <div className="flex gap-1">
+            <div className="h-6 w-6 bg-muted/30 rounded" />
+        </div>
       </div>
 
-      {/* Header: Activity light + Agent status + Active indicator + Branch name */}
-      <div className="mb-1 flex items-center gap-2" aria-hidden="true">
-        {/* Activity light placeholder - matches ActivityLight h-3 w-3 */}
-        <div className="h-3 w-3 bg-muted/50 rounded-full" />
-        {/* Agent status placeholder - matches AgentStatusIndicator h-5 w-5 */}
-        <div className="h-5 w-5 bg-muted/50 rounded-full" />
-        {/* Active indicator placeholder */}
-        <div className="h-3 w-3 bg-muted/50 rounded-full" />
-        {/* Branch name placeholder - wider to accommodate typical branch names */}
-        <div className="h-4 w-40 bg-muted/50 rounded" />
+      {/* Summary Lines */}
+      <div className="space-y-2 mb-3" aria-hidden="true">
+        <div className="h-3 w-full bg-muted/40 rounded" />
+        <div className="h-3 w-5/6 bg-muted/40 rounded" />
       </div>
 
-      {/* Path placeholder */}
-      <div className="mb-2" aria-hidden="true">
-        <div className="h-3 w-48 bg-muted/50 rounded" />
+      {/* Metrics Row (Dev | Terminals | Changes) */}
+      <div className="flex items-center gap-4" aria-hidden="true">
+         {/* Dev */}
+         <div className="flex items-center gap-2">
+             <div className="h-3 w-3 bg-muted/50 rounded-full" />
+             <div className="h-3 w-16 bg-muted/40 rounded" />
+         </div>
+         {/* Terminals */}
+         <div className="flex items-center gap-2">
+             <div className="h-3 w-3 bg-muted/50 rounded" />
+             <div className="h-3 w-4 bg-muted/40 rounded" />
+         </div>
+         {/* Changes */}
+         <div className="flex items-center gap-2">
+             <div className="h-3 w-3 bg-muted/50 rounded" />
+             <div className="h-3 w-12 bg-muted/40 rounded" />
+         </div>
       </div>
-
-      {/* Summary placeholder - taller to match text-sm rendering */}
-      <div className="mt-3 space-y-2" aria-hidden="true">
-        <div className="h-4 w-full bg-muted/50 rounded" />
-        <div className="h-4 w-3/4 bg-muted/50 rounded" />
-      </div>
-
-      {/* Terminal badge placeholder - appears when worktree has terminals */}
-      <div className="mt-3 h-6 w-32 bg-muted/50 rounded-sm" aria-hidden="true" />
     </div>
   );
 }

@@ -18,12 +18,14 @@ import { TerminalPalette } from "./components/TerminalPalette";
 import { RecipeEditor } from "./components/TerminalRecipe/RecipeEditor";
 import { SettingsDialog } from "./components/Settings";
 import { HistoryPanel } from "./components/History";
+import { Toaster } from "./components/ui/toaster";
 import {
   useTerminalStore,
   useWorktreeSelectionStore,
   useLogsStore,
   useErrorStore,
   useEventStore,
+  useNotificationStore,
   type RetryAction,
 } from "./store";
 import { useRecipeStore } from "./store/recipeStore";
@@ -34,12 +36,22 @@ interface SidebarContentProps {
   onOpenSettings: (tab?: "ai" | "general" | "troubleshooting") => void;
 }
 
+function formatBytes(bytes: number, decimals = 2) {
+  if (!+bytes) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
 function SidebarContent({ onOpenSettings }: SidebarContentProps) {
   const { worktrees, isLoading, error, refresh } = useWorktrees();
   const { inject, isInjecting } = useContextInjection();
   const { activeWorktreeId, focusedWorktreeId, selectWorktree, setActiveWorktree } =
     useWorktreeSelectionStore();
   const addError = useErrorStore((state) => state.addError);
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const focusedTerminalId = useTerminalStore((state) => state.focusedId);
 
   // Recipe editor state
@@ -90,6 +102,15 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
 
         // Log success
         console.log(`Copied ${result.fileCount} files as file reference`);
+
+        // Show success notification
+        const sizeStr = result.stats?.totalSize ? formatBytes(result.stats.totalSize) : "";
+        addNotification({
+            type: "success",
+            title: "Context Copied",
+            message: `Copied ${result.fileCount} files${sizeStr ? ` (${sizeStr})` : ""} to clipboard`,
+            duration: 3000
+        });
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to copy context to clipboard";
         const details = e instanceof Error ? e.stack : undefined;
@@ -125,7 +146,7 @@ function SidebarContent({ onOpenSettings }: SidebarContentProps) {
         console.error("Failed to copy context:", message);
       }
     },
-    [addError]
+    [addError, addNotification]
   );
 
   const handleOpenEditor = useCallback((worktree: WorktreeState) => {
@@ -557,6 +578,9 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         defaultTab={settingsTab}
       />
+
+      {/* Notifications */}
+      <Toaster />
     </>
   );
 }

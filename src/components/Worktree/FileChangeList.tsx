@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, Fragment } from "react";
 import type { FileChangeDetail, GitStatus } from "../../types";
+import { cn } from "../../lib/utils";
 
 /**
  * Browser-safe path utilities (no Node.js path module)
@@ -59,10 +60,16 @@ interface FileChangeListProps {
   rootPath: string;
 }
 
-function truncateMiddle(value: string, maxLength = 42): string {
-  if (value.length <= maxLength) return value;
-  const half = Math.floor((maxLength - 3) / 2);
-  return `${value.slice(0, half)}...${value.slice(-half)}`;
+function splitPath(filePath: string): { dir: string; base: string } {
+  const normalized = filePath.replace(/\\/g, "/");
+  const lastSlash = normalized.lastIndexOf("/");
+  if (lastSlash === -1) {
+    return { dir: "", base: normalized };
+  }
+  return {
+    dir: normalized.slice(0, lastSlash),
+    base: normalized.slice(lastSlash + 1),
+  };
 }
 
 export function FileChangeList({ changes, maxVisible = 4, rootPath }: FileChangeListProps) {
@@ -96,48 +103,63 @@ export function FileChangeList({ changes, maxVisible = 4, rootPath }: FileChange
   }
 
   return (
-    <div className="mt-3 space-y-1">
-      {visibleChanges.map((change) => {
-        const { icon, color } = STATUS_ICONS[change.status] || {
-          icon: "?",
-          color: "text-gray-400",
-        };
-        const relativePath = isAbsolutePath(change.path)
-          ? getRelativePath(rootPath, change.path)
-          : change.path;
-        const displayPath = truncateMiddle(relativePath, 42);
-        const additionsLabel = change.insertions !== null ? `+${change.insertions}` : "";
-        const deletionsLabel = change.deletions !== null ? `-${change.deletions}` : "";
+    <div className="mt-2">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-xs font-mono">
+        {visibleChanges.map((change) => {
+          const { icon, color } = STATUS_ICONS[change.status] || {
+            icon: "?",
+            color: "text-gray-400",
+          };
+          const relativePath = isAbsolutePath(change.path)
+            ? getRelativePath(rootPath, change.path)
+            : change.path;
+          
+          const { dir, base } = splitPath(relativePath);
+          const additionsLabel = change.insertions !== null ? `+${change.insertions}` : "";
+          const deletionsLabel = change.deletions !== null ? `-${change.deletions}` : "";
 
-        return (
-          <div
-            key={`${change.path}-${change.status}`}
-            className="flex items-center justify-between text-sm"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span className={`${color} font-mono font-bold flex-shrink-0`}>{icon}</span>
-              <span className="text-gray-200 truncate">{displayPath}</span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {additionsLabel && (
-                <span className="text-[var(--color-status-success)] text-xs font-mono">
-                  {additionsLabel}
+          return (
+            <Fragment key={`${change.path}-${change.status}`}>
+              {/* Icon Column */}
+              <div className={cn(color, "font-bold flex items-center")}>
+                {icon}
+              </div>
+              
+              {/* Path Column - RTL for left-side truncation, LTR for content */}
+              <div 
+                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-left text-gray-500" 
+                dir="rtl"
+                title={relativePath}
+              >
+                <span dir="ltr">
+                   {dir && <span className="text-gray-500">{dir}/</span>}
+                   <span className="text-gray-200">{base}</span>
                 </span>
-              )}
-              {deletionsLabel && (
-                <span className="text-[var(--color-status-error)] text-xs font-mono">
-                  {deletionsLabel}
-                </span>
-              )}
-            </div>
-          </div>
-        );
-      })}
+              </div>
+              
+              {/* Stats Column */}
+              <div className="flex items-center gap-2 justify-end">
+                {additionsLabel && (
+                  <span className="text-[var(--color-status-success)]">
+                    {additionsLabel}
+                  </span>
+                )}
+                {deletionsLabel && (
+                  <span className="text-[var(--color-status-error)]">
+                    {deletionsLabel}
+                  </span>
+                )}
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+      
       {remainingCount > 0 && (
-        <div className="text-gray-500 text-sm">
+        <div className="mt-1.5 text-gray-500 text-xs pl-0.5">
           ...and {remainingCount} more
           {remainingFiles.length > 0 && (
-            <span className="ml-1">
+            <span className="ml-1 opacity-75">
               ({remainingFiles.map((f) => getBasename(f.path)).join(", ")}
               {sortedChanges.length > maxVisible + 2 && ", ..."})
             </span>

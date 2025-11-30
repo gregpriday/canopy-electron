@@ -13,3 +13,6 @@ export { useEventStore } from "./eventStore";
 export { useProjectStore } from "./projectStore";
 
 export { useFocusStore } from "./focusStore";
+
+export { useNotificationStore } from "./notificationStore";
+export type { Notification, NotificationType } from "./notificationStore";

@@ -1,10 +1,9 @@
 import { useCallback, useState, useEffect, useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import type { WorktreeState, WorktreeMood } from "../../types";
+import type { WorktreeState } from "../../types";
 import { ActivityLight } from "./ActivityLight";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
 import { FileChangeList } from "./FileChangeList";
-import { TerminalCountBadge } from "./TerminalCountBadge";
 import { ErrorBanner } from "../Errors/ErrorBanner";
 import { useDevServer } from "../../hooks/useDevServer";
 import { useWorktreeTerminals } from "../../hooks/useWorktreeTerminals";
@@ -17,20 +16,23 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "../ui/dropdown-menu";
 import { ConfirmDialog } from "../Terminal/ConfirmDialog";
 import {
-  Sparkles,
   AlertCircle,
   Loader2,
   Copy,
-  Syringe,
   Code,
   CircleDot,
   GitPullRequest,
   Play,
   Plus,
+  MoreHorizontal,
   Terminal,
+  Globe,
+  GitCommitHorizontal,
+  Folder,
 } from "lucide-react";
 
 export interface WorktreeCardProps {
@@ -54,13 +56,6 @@ export interface WorktreeCardProps {
   /** User's home directory for path formatting */
   homeDir?: string;
 }
-
-const MOOD_ACCENT_COLORS: Record<WorktreeMood, string> = {
-  active: "bg-blue-400",
-  stable: "bg-green-400",
-  stale: "bg-yellow-500",
-  error: "bg-red-400",
-};
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 
@@ -105,14 +100,11 @@ export function WorktreeCard({
   onOpenIssue,
   onOpenPR,
   onToggleServer,
-  onInjectContext,
-  isInjecting = false,
   onCreateRecipe,
   onOpenSettings,
   homeDir,
 }: WorktreeCardProps) {
   const mood = worktree.mood || "stable";
-  const moodColorClass = MOOD_ACCENT_COLORS[mood];
 
   // Recipe store
   const getRecipesForWorktree = useRecipeStore((state) => state.getRecipesForWorktree);
@@ -288,93 +280,61 @@ export function WorktreeCard({
   const branchLabel = worktree.branch ?? worktree.name;
   const hasChanges = (worktree.worktreeChanges?.changedFileCount ?? 0) > 0;
 
-  // AI Summary renderer
+  // AI Summary
   const renderAISummary = useCallback(() => {
     const { summary, aiStatus } = worktree;
-    const setProblemsPanelOpen = useErrorStore.getState().setPanelOpen;
 
     switch (aiStatus) {
+      case "loading":
+        return (
+          <span className="inline-flex items-center gap-1.5 text-gray-400">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="italic">generating summary…</span>
+          </span>
+        );
+
       case "disabled":
         return (
-          <div className="text-xs text-gray-400 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 opacity-50" aria-hidden="true" />
-            <span>AI summaries off</span>
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <span>AI disabled</span>
             {onOpenSettings && (
-              <>
-                <span> ·</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenSettings("ai");
-                  }}
-                  className="text-canopy-accent hover:underline"
-                >
-                  Configure in Settings
-                </button>
-              </>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenSettings("ai");
+                }}
+                className="hover:text-canopy-accent hover:underline text-[0.7rem] px-1 border border-gray-700 rounded"
+              >
+                Enable
+              </button>
             )}
-          </div>
+          </span>
         );
 
       case "error":
-        return (
-          <div className="text-xs text-red-400 flex items-center gap-1">
-            <AlertCircle className="w-3 h-3" aria-hidden="true" />
-            <span>AI summary failed ·</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setProblemsPanelOpen(true);
-              }}
-              className="hover:underline"
-            >
-              See Problems panel
-            </button>
-          </div>
-        );
-
-      case "loading":
-        return (
-          <div className="text-xs text-gray-400 flex items-center gap-1">
-            <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
-            <span>Analyzing changes...</span>
-          </div>
-        );
+        return <span className="text-[var(--color-status-error)]">Summary unavailable</span>;
 
       case "active": {
-        if (!summary) {
-          return <div className="text-xs text-gray-400">Waiting for first changes...</div>;
+        if (summary) {
+           return <span className="text-gray-300">{summary}</span>;
         }
-        // Check if it's a commit message
-        const isCommitMessage = summary.startsWith("Last commit:") || summary.startsWith("✅");
-        return (
-          <div className="text-xs flex items-start gap-1">
-            <Sparkles
-              className="w-3 h-3 text-canopy-accent mt-0.5 flex-shrink-0"
-              aria-hidden="true"
-            />
-            <span
-              className={cn(
-                isCommitMessage ? "text-gray-500" : hasChanges ? "text-gray-300" : "text-gray-500"
-              )}
-            >
-              {summary}
-            </span>
-          </div>
-        );
+        if (hasChanges) {
+          return <span className="text-gray-400 italic">Changes detected...</span>;
+        }
+        return <span className="text-gray-500 italic">No recent changes</span>;
       }
 
       default:
         return null;
     }
-  }, [worktree.aiStatus, worktree.summary, onOpenSettings, hasChanges]);
+  }, [worktree.aiStatus, worktree.summary, hasChanges, onOpenSettings]);
 
   // Server status helpers
   const getServerStatusIndicator = () => {
     if (!serverState) return null;
     switch (serverState.status) {
       case "stopped":
-        return <span className="text-gray-500">○</span>;
+        return <span className="text-gray-600">○</span>;
       case "starting":
         return <span className="text-[var(--color-server-starting)]">◐</span>;
       case "running":
@@ -382,72 +342,29 @@ export function WorktreeCard({
       case "error":
         return <span className="text-[var(--color-server-error)]">●</span>;
       default:
-        return <span className="text-gray-500">○</span>;
+        return <span className="text-gray-600">○</span>;
     }
   };
 
-  const getServerStatusText = () => {
+  const getServerLabel = () => {
     if (!serverState) return null;
-    switch (serverState.status) {
-      case "stopped":
-        return <span className="text-gray-500">Dev Server</span>;
-      case "starting":
-        return <span className="text-[var(--color-server-starting)]">Starting...</span>;
-      case "running":
-        return serverState.url ? (
-          <span className="text-[var(--color-server-running)]">{serverState.url}</span>
-        ) : (
-          <span className="text-[var(--color-server-running)]">Running</span>
-        );
-      case "error":
-        return (
-          <span className="text-[var(--color-server-error)]">
-            {serverState.errorMessage ? `Error: ${serverState.errorMessage.slice(0, 40)}` : "Error"}
-          </span>
-        );
-      default:
-        return <span className="text-gray-500">Dev Server</span>;
+    if (serverState.status === "running" && serverState.url) {
+        // Strip http:// and trailing slash for density
+        return serverState.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     }
-  };
-
-  const getServerButtonLabel = () => {
-    if (!serverState) return "Start";
-    switch (serverState.status) {
-      case "stopped":
-        return "Start";
-      case "starting":
-        return "...";
-      case "running":
-        return "Stop";
-      case "error":
-        return "Retry";
-      default:
-        return "Start";
-    }
-  };
-
-  const getServerButtonColor = () => {
-    if (!serverState) return "text-[var(--color-status-success)]";
-    switch (serverState.status) {
-      case "stopped":
-        return "text-[var(--color-status-success)]"; // Start button (green = go)
-      case "starting":
-        return "text-[var(--color-status-warning)]";
-      case "running":
-        return "text-[var(--color-status-error)]"; // Stop button (red = stop)
-      case "error":
-        return "text-[var(--color-status-success)]"; // Retry button (green = try again)
-      default:
-        return "text-gray-400";
-    }
+    if (serverState.status === "error") return "Error";
+    if (serverState.status === "starting") return "Starting";
+    return "Dev Server";
   };
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl bg-card/40 border border-border/50 p-4 mb-3 cursor-pointer transition-all",
-        isActive ? "bg-accent/10 border-accent/20 hover:bg-accent/15" : "hover:bg-card/60",
-        isFocused && "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900"
+        "group relative overflow-hidden rounded-lg bg-card/30 border border-border/60 px-3 py-2.5 mb-2 cursor-pointer transition-all",
+        isActive
+          ? "border-canopy-accent bg-canopy-accent/5 shadow-sm"
+          : "hover:border-canopy-accent/60 hover:bg-card/60",
+        isFocused && "ring-1 ring-canopy-accent"
       )}
       onClick={onSelect}
       onKeyDown={(e) => {
@@ -460,272 +377,166 @@ export function WorktreeCard({
       role="button"
       aria-label={`Worktree: ${branchLabel}`}
     >
-      {/* Left-edge status bar */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", moodColorClass)} />
-
-      {/* Content with left padding to avoid status bar */}
-      <div className="pl-2">
-        {/* Action buttons */}
-        <div className="flex gap-2 mb-3 border-b border-gray-700 pb-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopyTree();
-            }}
-            className="p-1.5 border border-gray-600 rounded hover:bg-gray-800 hover:border-gray-500 text-gray-300 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
-            title="Copy context to clipboard"
-            aria-label="Copy context to clipboard"
-          >
-            <Copy size={14} />
-          </button>
-          {onInjectContext && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onInjectContext();
-              }}
-              disabled={isInjecting}
-              className={cn(
-                "p-1.5 border border-purple-600 rounded text-purple-400 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none",
-                isInjecting
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-purple-900 hover:border-purple-500"
+      {/* Content container */}
+      <div className="flex flex-col gap-1.5">
+        {/* Header: Identity + Actions */}
+        <div className="flex items-start justify-between gap-2">
+          {/* Left: identity + status */}
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 text-xs font-mono leading-none mb-1">
+              <ActivityLight timestamp={worktree.lastActivityTimestamp} />
+              <AgentStatusIndicator state={dominantAgentState} />
+              {isActive && (
+                <span
+                  className="text-[var(--color-state-active)] text-[0.6rem]"
+                  aria-label="Active worktree"
+                >
+                  ●
+                </span>
               )}
-              title="Inject context into focused terminal (Ctrl+Shift+I)"
-              aria-label={
-                isInjecting ? "Injecting context..." : "Inject context into focused terminal"
-              }
-              aria-busy={isInjecting}
-            >
-              {isInjecting ? <Loader2 size={14} className="animate-spin" /> : <Syringe size={14} />}
-            </button>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenEditor();
-            }}
-            className="p-1.5 border border-gray-600 rounded hover:bg-gray-800 hover:border-gray-500 text-gray-300 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
-            title="Open in code editor"
-            aria-label="Open in code editor"
-          >
-            <Code size={14} />
-          </button>
-          {worktree.issueNumber && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenIssue();
-              }}
-              className="p-1.5 border border-blue-600 rounded hover:bg-blue-900 hover:border-blue-500 text-[var(--color-status-info)] transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-              title={`Open issue #${worktree.issueNumber}`}
-              aria-label={`Open issue #${worktree.issueNumber}`}
-            >
-              <CircleDot size={14} />
-            </button>
-          )}
-          {worktree.prNumber && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPR();
-              }}
-              className="p-1.5 border border-green-600 rounded hover:bg-green-900 hover:border-green-500 text-[var(--color-status-success)] transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:outline-none"
-              title={`Open pull request #${worktree.prNumber}`}
-              aria-label={`Open pull request #${worktree.prNumber}`}
-            >
-              <GitPullRequest size={14} />
-            </button>
-          )}
-          {/* Recipe dropdown */}
-          {recipes.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  disabled={runningRecipeId !== null}
-                  className={cn(
-                    "p-1.5 border border-orange-600 rounded text-orange-400 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:outline-none",
-                    runningRecipeId !== null
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-orange-900 hover:border-orange-500"
-                  )}
-                  title={`Run recipe (${recipes.length} available)`}
-                  aria-label={
-                    runningRecipeId
-                      ? "Running recipe..."
-                      : `Run recipe (${recipes.length} available)`
-                  }
-                  aria-busy={runningRecipeId !== null}
-                >
-                  {runningRecipeId ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Play size={14} />
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                {recipes.map((recipe) => (
-                  <DropdownMenuItem
-                    key={recipe.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRunRecipe(recipe.id);
-                    }}
-                    disabled={runningRecipeId !== null}
-                  >
-                    {recipe.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {onCreateRecipe && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCreateRecipe();
-              }}
-              className="p-1.5 border border-gray-600 rounded hover:bg-gray-800 hover:border-gray-500 text-gray-300 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:outline-none"
-              title="Create terminal recipe"
-              aria-label="Create terminal recipe"
-            >
-              <Plus size={14} />
-            </button>
-          )}
-          {/* Terminal bulk actions dropdown */}
-          {totalTerminalCount > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="p-1.5 border border-cyan-600 rounded text-cyan-400 hover:bg-cyan-900 hover:border-cyan-500 transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none flex items-center gap-1"
-                  title={`Terminal actions (${totalTerminalCount} terminal${totalTerminalCount !== 1 ? "s" : ""})`}
-                  aria-label={`Terminal actions (${totalTerminalCount} terminal${totalTerminalCount !== 1 ? "s" : ""})`}
-                >
-                  <Terminal size={14} />
-                  <span className="text-xs">{totalTerminalCount}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseCompleted();
-                  }}
-                  disabled={completedCount === 0}
-                >
-                  Close Completed ({completedCount})
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseFailed();
-                  }}
-                  disabled={failedCount === 0}
-                >
-                  Close Failed ({failedCount})
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseAllTerminals();
-                  }}
-                  className="text-[var(--color-status-error)] focus:text-[var(--color-status-error)]"
-                >
-                  Close All...
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-
-        {/* Header: Activity light + Agent status + Branch */}
-        <div className="mb-1 flex items-center gap-2">
-          <ActivityLight timestamp={worktree.lastActivityTimestamp} />
-          <AgentStatusIndicator state={dominantAgentState} />
-          {isActive && <span className="text-[var(--color-state-active)]">●</span>}
-          <span
-            className={cn(
-              "font-bold",
-              mood === "active" ? "text-[var(--color-status-warning)]" : "text-gray-200"
-            )}
-          >
-            {branchLabel}
-          </span>
-          {!worktree.branch && (
-            <span className="text-[var(--color-status-warning)]">(detached)</span>
-          )}
-          {worktree.aiStatus === "disabled" && <span className="text-gray-500">[AI off]</span>}
-          {worktree.aiStatus === "error" && (
-            <span className="text-[var(--color-status-error)]">[AI err]</span>
-          )}
-        </div>
-
-        {/* Path (clickable) */}
-        <div className="mb-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePathClick();
-            }}
-            className={cn(
-              "text-sm text-gray-500 hover:text-gray-400 hover:underline text-left",
-              isFocused && "underline"
-            )}
-          >
-            {displayPath}
-          </button>
-        </div>
-
-        {/* Summary */}
-        <div className="mt-3 text-sm">{renderAISummary()}</div>
-
-        {/* Files */}
-        {hasChanges && worktree.worktreeChanges && (
-          <FileChangeList
-            changes={worktree.worktreeChanges.changes}
-            rootPath={worktree.worktreeChanges.rootPath}
-            maxVisible={4}
-          />
-        )}
-
-        {/* Server status */}
-        {hasDevScript && serverState && (
-          <div className="mt-3 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              {getServerStatusIndicator()}
-              {getServerStatusText()}
+              <span
+                className={cn(
+                  "truncate font-semibold",
+                  mood === "active"
+                    ? "text-[var(--color-status-warning)]"
+                    : "text-gray-200"
+                )}
+              >
+                {branchLabel}
+              </span>
+              {!worktree.branch && (
+                <span className="text-[var(--color-status-warning)] text-[0.65rem]">(detached)</span>
+              )}
+              
+              {/* Issues/PRs in header line for extreme density */}
+              {worktree.prNumber && (
+                 <span className="flex items-center gap-0.5 text-[0.65rem] text-[var(--color-status-success)] bg-green-500/10 px-1 rounded">
+                    <GitPullRequest className="w-2.5 h-2.5" />
+                    {worktree.prNumber}
+                 </span>
+              )}
+              {worktree.issueNumber && (
+                 <span className="flex items-center gap-0.5 text-[0.65rem] text-[var(--color-status-info)] bg-blue-500/10 px-1 rounded">
+                    <CircleDot className="w-2.5 h-2.5" />
+                    {worktree.issueNumber}
+                 </span>
+              )}
             </div>
+
+            {/* Path (Always visible but subtle) */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (!serverLoading && serverState.status !== "starting") {
-                  onToggleServer();
-                }
+                handlePathClick();
               }}
-              disabled={serverLoading || serverState.status === "starting"}
               className={cn(
-                "text-xs px-2 py-1 border rounded font-bold",
-                getServerButtonColor(),
-                serverLoading || serverState.status === "starting"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-800"
+                "text-[0.7rem] text-gray-500 hover:text-gray-400 hover:underline text-left font-mono truncate",
+                isFocused && "underline"
               )}
             >
-              [{getServerButtonLabel()}]
+              {displayPath}
             </button>
           </div>
-        )}
 
-        {/* Terminal count badge */}
-        <TerminalCountBadge counts={terminalCounts} />
+          {/* Right: action icons */}
+          <div className="flex items-center gap-0.5 -mt-0.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-canopy-accent"
+                  aria-label="More actions"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={4} onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => onCopyTree()}>
+                   <Copy className="w-3 h-3 mr-2" />
+                   Copy Context
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onOpenEditor()}>
+                   <Code className="w-3 h-3 mr-2" />
+                   Open in Editor
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePathClick()}>
+                   <Folder className="w-3 h-3 mr-2" />
+                   Reveal in Finder
+                </DropdownMenuItem>
 
-        {/* Agent note */}
+                {(worktree.issueNumber || worktree.prNumber) && <DropdownMenuSeparator />}
+
+                {worktree.issueNumber && onOpenIssue && (
+                  <DropdownMenuItem onClick={() => handleOpenIssue()}>
+                    <CircleDot className="w-3 h-3 mr-2" />
+                    Open Issue #{worktree.issueNumber}
+                  </DropdownMenuItem>
+                )}
+                {worktree.prNumber && onOpenPR && (
+                  <DropdownMenuItem onClick={() => handleOpenPR()}>
+                    <GitPullRequest className="w-3 h-3 mr-2" />
+                    Open PR #{worktree.prNumber}
+                  </DropdownMenuItem>
+                )}
+
+                {(recipes.length > 0 || onCreateRecipe) && <DropdownMenuSeparator />}
+                
+                {recipes.length > 0 && (
+                  <>
+                    <DropdownMenuLabel>Recipes</DropdownMenuLabel>
+                    {recipes.map((recipe) => (
+                      <DropdownMenuItem
+                        key={recipe.id}
+                        onClick={() => handleRunRecipe(recipe.id)}
+                        disabled={runningRecipeId !== null}
+                      >
+                        <Play className="w-3 h-3 mr-2" />
+                        {recipe.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                {onCreateRecipe && (
+                   <DropdownMenuItem onClick={onCreateRecipe}>
+                     <Plus className="w-3 h-3 mr-2" />
+                     Create Recipe...
+                   </DropdownMenuItem>
+                )}
+
+                {totalTerminalCount > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Terminals</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleCloseCompleted} disabled={completedCount === 0}>
+                       Close Completed ({completedCount})
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCloseFailed} disabled={failedCount === 0}>
+                       Close Failed ({failedCount})
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleCloseAllTerminals}
+                      className="text-[var(--color-status-error)] focus:text-[var(--color-status-error)]"
+                    >
+                       Close All...
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Summary Block */}
+        <div className="text-xs leading-relaxed break-words">
+            {renderAISummary()}
+        </div>
+        
+        {/* Note (only if present) */}
         {effectiveNote && (
-          <div className="mt-3 text-sm text-gray-300">
+          <div className={cn(
+              "text-xs text-gray-400 bg-black/20 p-1.5 rounded border-l-2 border-gray-700 font-mono",
+              isActive ? "line-clamp-none" : "line-clamp-2"
+          )}>
             {parsedNoteSegments.map((segment, index) =>
               segment.type === "link" ? (
                 <a
@@ -751,22 +562,106 @@ export function WorktreeCard({
           </div>
         )}
 
-        {/* Inline errors for this worktree */}
-        {worktreeErrors.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {worktreeErrors.slice(0, 3).map((error) => (
-              <ErrorBanner
-                key={error.id}
-                error={error}
-                onDismiss={dismissError}
-                onRetry={handleErrorRetry}
-                compact
-              />
-            ))}
-            {worktreeErrors.length > 3 && (
-              <div className="text-xs text-gray-500">+{worktreeErrors.length - 3} more errors</div>
+        {/* DENSE METRICS ROW: Terminals | Changes | Errors (collapsed) */}
+        <div className="flex items-center gap-4 mt-1 text-xs text-gray-400 font-mono">
+            
+            {/* Terminals */}
+            {terminalCounts.total > 0 && (
+                 <div className="flex items-center gap-1.5">
+                     <Terminal className="w-3 h-3" />
+                     <span>{terminalCounts.total}</span>
+                     {(terminalCounts.byState.working > 0 || terminalCounts.byState.waiting > 0) && (
+                        <span className="text-[var(--color-status-success)] text-[0.65rem] flex items-center">
+                            <div className="w-1 h-1 rounded-full bg-current mr-0.5 animate-pulse" />
+                        </span>
+                     )}
+                 </div>
             )}
-          </div>
+
+            {/* Changes */}
+            {hasChanges && worktree.worktreeChanges && (
+                <div className="flex items-center gap-1.5">
+                    <GitCommitHorizontal className="w-3 h-3" />
+                    <div className="flex items-center gap-1">
+                         <span className="text-[var(--color-status-success)]">+{worktree.worktreeChanges.insertions ?? 0}</span>
+                         <span className="text-gray-600">/</span>
+                         <span className="text-[var(--color-status-error)]">-{worktree.worktreeChanges.deletions ?? 0}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Summary (only if NOT active - active shows banner) */}
+            {!isActive && worktreeErrors.length > 0 && (
+                <div className="flex items-center gap-1 text-[var(--color-status-error)]">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{worktreeErrors.length}</span>
+                </div>
+            )}
+        </div>
+
+        {/* ACTIVE STATE EXPANSIONS */}
+        
+        {/* 1. File Changes List */}
+        {isActive && hasChanges && worktree.worktreeChanges && (
+             <div className="mt-1">
+                <FileChangeList
+                    changes={worktree.worktreeChanges.changes}
+                    rootPath={worktree.worktreeChanges.rootPath}
+                    maxVisible={5}
+                />
+             </div>
+        )}
+
+        {/* Dev Server Button (new placement) */}
+        {hasDevScript && serverState && (
+            <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 font-mono">
+                <Globe className="w-3 h-3" />
+                <div className="flex items-center gap-1">
+                    {getServerStatusIndicator()}
+                    <span className="truncate max-w-[120px]">{getServerLabel()}</span>
+                </div>
+                {/* Tiny Action Button for Dev Server */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!serverLoading && serverState.status !== "starting") {
+                        onToggleServer();
+                        }
+                    }}
+                    disabled={serverLoading || serverState.status === "starting"}
+                    className={cn(
+                        "ml-1 p-0.5 rounded hover:bg-gray-700 transition-colors",
+                        serverLoading ? "opacity-50" : ""
+                    )}
+                    title={serverState.status === "running" ? "Stop Server" : "Start Server"}
+                >
+                    {serverState.status === "running" ? (
+                        <div className="w-1.5 h-1.5 bg-[var(--color-status-error)] rounded-sm" />
+                    ) : (
+                        <Play className="w-2 h-2 fill-current" />
+                    )}
+                </button>
+            </div>
+        )}
+
+        {/* 2. Detailed Errors */}
+        {isActive && worktreeErrors.length > 0 && (
+            <div className="space-y-1 mt-2">
+                {worktreeErrors.slice(0, 3).map((error) => (
+                    <ErrorBanner
+                    key={error.id}
+                    error={error}
+                    onDismiss={dismissError}
+                    onRetry={handleErrorRetry}
+                    compact
+                    />
+                ))}
+                {worktreeErrors.length > 3 && (
+                    <div className="text-[0.65rem] text-gray-500 text-center">
+                    +{worktreeErrors.length - 3} more errors
+                    </div>
+                )}
+            </div>
         )}
 
         {/* Confirmation dialog for bulk close all terminals */}
