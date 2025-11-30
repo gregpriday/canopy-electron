@@ -37,6 +37,9 @@ export interface WorktreeState extends Worktree {
 
   // Timestamp when the note file was last modified (milliseconds since epoch)
   aiNoteTimestamp?: number;
+
+  // Event timestamp (required by event system)
+  timestamp?: number;
 }
 
 /**
@@ -1066,6 +1069,7 @@ export class WorktreeMonitor {
    */
   private emitUpdate(): void {
     const state = this.getState();
+    const payload = { ...state, timestamp: Date.now() };
     logDebug("emitUpdate called", {
       id: this.id,
       summary: state.summary ? `${state.summary.substring(0, 50)}...` : undefined,
@@ -1073,6 +1077,6 @@ export class WorktreeMonitor {
       mood: state.mood,
       stack: new Error().stack?.split("\n").slice(2, 5).join(" <-\n"),
     });
-    events.emit("sys:worktree:update", state);
+    events.emit("sys:worktree:update", payload);
   }
 }
