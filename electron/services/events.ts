@@ -12,27 +12,16 @@ import type {
   RunCancelledPayload,
   RunPausedPayload,
   RunResumedPayload,
+  EventCategory,
 } from "../types/index.js";
 import type { WorktreeState } from "./WorktreeMonitor.js";
+
+// Re-export EventCategory for backwards compatibility
+export type { EventCategory };
 
 // ============================================================================
 // Event Category and Metadata System
 // ============================================================================
-
-/**
- * Event categories for organizing and filtering events.
- * Used by EventBuffer for categorization and the Event Inspector UI.
- */
-export type EventCategory =
-  | "system" // sys:* - core system state (worktrees, PR detection)
-  | "agent" // agent:* - agent lifecycle and output
-  | "task" // task:* - task orchestration
-  | "run" // run:* - run lifecycle
-  | "server" // server:* - dev server state
-  | "file" // file:* - file operations (copy-tree, open)
-  | "ui" // ui:* - UI notifications/state
-  | "watcher" // watcher:* - file watching
-  | "artifact"; // artifact:* - detected artifacts
 
 /**
  * Metadata for each event type.
